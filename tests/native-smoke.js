@@ -205,7 +205,7 @@
     check("sensor readings loaded", $("g-x").textContent.includes("Δg"));
     const graphBounds = $("sensor-graph").getBoundingClientRect();
     const panelBounds = document
-      .querySelector(".graph-panel")
+      .querySelector('[data-testid="graph-panel"]')
       .getBoundingClientRect();
     check(
       "all graph rows fit the panel",

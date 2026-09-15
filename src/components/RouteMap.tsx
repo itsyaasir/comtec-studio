@@ -110,15 +110,24 @@ export const RouteMap = memo(function RouteMap({ samples, sample }: Props) {
     (s) => s.latitude !== null && s.longitude !== null,
   );
   return (
-    <div className="route-map">
-      <div ref={container} id="route-map" aria-label="Recorded GPS route" />
-      <div id="route-empty" className="route-empty" hidden={hasFix}>
+    <div className="relative h-full bg-secondary">
+      <div
+        ref={container}
+        id="route-map"
+        className="h-full"
+        aria-label="Recorded GPS route"
+      />
+      <div
+        id="route-empty"
+        className="absolute inset-0 z-[450] grid place-content-center bg-secondary text-center text-[11px] text-muted-foreground"
+        hidden={hasFix}
+      >
         {samples.length
           ? "No GPS fix in this recording"
           : "Your recorded route appears here"}
       </div>
       {unavailable && hasFix && (
-        <span className="map-note">
+        <span className="absolute right-8 bottom-20 left-8 z-[500] bg-background p-5 text-[9px]">
           Street map unavailable · Recorded route remains visible
         </span>
       )}

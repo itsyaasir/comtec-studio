@@ -336,7 +336,10 @@ export default function App() {
               {(showMap || showMotion) && (
                 <>
                   <div
-                    className="telemetry-resize"
+                    className={cn(
+                      "h-12 shrink-0 touch-none items-center justify-center cursor-row-resize",
+                      expanded ? "hidden" : "flex",
+                    )}
                     role="separator"
                     tabIndex={0}
                     aria-label="Resize telemetry panel"
@@ -378,10 +381,13 @@ export default function App() {
                       drag.current = null;
                     }}
                   >
-                    <span />
+                    <span className="h-3 w-28 rounded-[2px] bg-border" />
                   </div>
                   <div
-                    className="telemetry-container"
+                    className={cn(
+                      "mx-16 min-h-180 max-h-[40vh] shrink-0 [@media(max-height:780px)]:max-h-180",
+                      expanded && "hidden",
+                    )}
                     style={{ height: telemetryHeight }}
                   >
                     <TelemetryPanel

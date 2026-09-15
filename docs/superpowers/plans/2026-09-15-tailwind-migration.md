@@ -667,7 +667,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: nothing new
 - Produces: nothing consumed by later tasks
 
-- [ ] **Step 1: Read the scattered blocks**
+- [x] **Step 1: Read the scattered blocks**
 
 ```bash
 grep -n '\.telemetry\|\.map-section\|\.graph-\|\.route-\|\.axis-values\|\.sensor-note\|\.map-note\|\.map-loading\|\.leaflet' src/style.css
@@ -675,33 +675,33 @@ grep -n '\.telemetry\|\.map-section\|\.graph-\|\.route-\|\.axis-values\|\.sensor
 
 `.map-section > header` @ 805 **and** 1190; `.graph-heading select` @ 878 **and** 1223.
 
-- [ ] **Step 2: Preserve the Leaflet overrides**
+- [x] **Step 2: Preserve the Leaflet overrides**
 
 Lines 850-860 (`.leaflet-container`, `.leaflet-control-attribution`, `.leaflet-control-zoom`) style third-party DOM that Leaflet creates itself. They **stay** in `style.css` — they are part of the ~160-line floor. Do not convert or delete them.
 
-- [ ] **Step 3: Convert the map section**
+- [x] **Step 3: Convert the map section**
 
 `.map-section` → `relative min-h-0 border-r border-border`. Its floating header chip → `absolute top-2 left-2 z-[500] flex items-center gap-[5px] rounded border border-border bg-background px-[7px] py-1 text-[9px] shadow-sm pointer-events-none` (note: the close button inside needs `pointer-events-auto`).
 
-- [ ] **Step 4: Convert the graph panel**
+- [x] **Step 4: Convert the graph panel**
 
 `.graph-panel` → `flex min-h-0 flex-col px-[13px] pt-2.5 pb-[7px]` plus `data-testid="graph-panel"` (replaces the `.graph-panel` selector at `native-smoke.js:208`).
 
 `.graph-heading` → `flex shrink-0 items-center gap-2.5 text-[9px]`; its select → `ml-auto max-w-[190px] rounded border border-border bg-secondary px-[3px] py-0.5 text-[9px]`.
 
-- [ ] **Step 5: Convert the axis legend**
+- [x] **Step 5: Convert the axis legend**
 
 `.axis-values` → `flex gap-3 text-[9px]`, with `max-[1180px]:gap-2`; its labels keep the inline `style={{ color: a.color }}`.
 
 Leave the three `axes` colours in `TelemetryPanel.tsx:8-12` unchanged. Retinting the chart series is a separate concern from this migration and belongs in its own change.
 
-- [ ] **Step 6: Convert the resize separator and container**
+- [x] **Step 6: Convert the resize separator and container**
 
 In `src/App.tsx`, `.telemetry-resize` → `group relative h-1 shrink-0 cursor-row-resize`, its inner `<span>` → `absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border group-hover:bg-ring`. Keep every ARIA attribute and pointer handler.
 
 `.telemetry-container` keeps its inline `style={{ height }}` and gains `shrink-0 overflow-hidden max-[780px]:max-h-[180px]`.
 
-- [ ] **Step 7: Delete the converted CSS**
+- [x] **Step 7: Delete the converted CSS**
 
 Remove 711-849, 861-925, 1137-1143 and 1184-1225. **Do not remove 850-860.** Then:
 
@@ -711,7 +711,7 @@ grep -n '\.leaflet' src/style.css
 
 Expected: the three Leaflet rules still present.
 
-- [ ] **Step 8: Verify**
+- [x] **Step 8: Verify**
 
 ```bash
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
@@ -719,7 +719,7 @@ npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
 
 Then run `tests/native-smoke.js`. It exercises map/graph show-hide independently, asserts `#route-map img.leaflet-tile` renders at 256px, checks `.leaflet-container` count stays 1 after remount, and asserts the graph rows fit the panel.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/
@@ -730,6 +730,23 @@ creates itself, which utilities cannot reach.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
+
+**Execution notes (Task 5):**
+
+- Preserved effective current CSS where the examples were stale: 12px resize
+  target with a 28×3px grip, 180px minimum/40vh maximum container height,
+  10px graph top padding, 14px legend gap, and the later map-header overrides.
+  The 780px breakpoint is based on window **height**, not width.
+- Converted focused-camera hiding to conditional utilities and retained all
+  pointer/keyboard handlers, IDs, chart colors, and dynamic inline styles.
+  All three Leaflet override blocks remain unchanged.
+- Typecheck, lint, all 8 logic tests, production build, native debug build,
+  and `git diff --check` passed. The native WKWebView smoke suite passed all
+  79 assertions using the existing `~/Documents/Dashcam` fixtures, including
+  graph fit, map tiles, independent panel visibility, and remount checks.
+  Report: `~/Library/Caches/app.comtec.studio/native-smoke.json`.
+- Spec and code-quality reviews passed. The manual two-theme visual pass
+  remains part of Task 8.
 
 ---
 

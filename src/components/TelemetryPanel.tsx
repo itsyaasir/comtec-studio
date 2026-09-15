@@ -1,6 +1,7 @@
 import { memo, useMemo, useState, lazy, Suspense } from "react";
 import { X, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Telemetry } from "@/lib/types";
 const RouteMap = lazy(() =>
   import("./RouteMap").then((module) => ({ default: module.RouteMap })),
@@ -58,40 +59,61 @@ export const TelemetryPanel = memo(function TelemetryPanel({
   }, [data.samples, duration, raw]);
   return (
     <section
-      className="telemetry"
+      className="flex h-full flex-col overflow-hidden rounded-[8px] border border-border"
       id="telemetry-panel"
       aria-label="Speed, GPS route and acceleration"
     >
       <div
-        className={`telemetry-body ${!showMap || !showMotion ? "single-panel" : ""}`}
+        className={cn(
+          "grid min-h-0 flex-1",
+          !showMap || !showMotion
+            ? "grid-cols-[minmax(0,1fr)]"
+            : "grid-cols-[minmax(180px,34%)_minmax(0,1fr)]",
+        )}
       >
         {showMap && (
-          <div className="map-section">
-            <header>
-              <MapPin size={13} />
-              <span>Map</span>
+          <div
+            className={cn(
+              "relative min-h-0",
+              showMotion && "border-r border-border",
+            )}
+          >
+            <header className="pointer-events-none absolute top-8 right-8 left-8 z-[500] flex items-center justify-start gap-5 rounded-[4px] text-[9px]">
+              <MapPin size={13} className="hidden" />
+              <span className="rounded-[4px] bg-background px-7 py-4">Map</span>
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="pointer-events-auto ml-auto h-24 w-24 bg-background hover:bg-background dark:hover:bg-background"
                 aria-label="Close map"
                 onClick={onCloseMap}
               >
-                <X />
+                <X className="size-13" />
               </Button>
             </header>
             <Suspense
-              fallback={<div className="map-loading">Loading map…</div>}
+              fallback={
+                <div className="grid h-full place-content-center text-[11px] text-muted-foreground">
+                  Loading map…
+                </div>
+              }
             >
               <RouteMap samples={data.samples} sample={sample} />
             </Suspense>
           </div>
         )}
         {showMotion && (
-          <div className="graph-panel">
-            <div className="graph-heading">
-              <span>ACCELERATION</span>
+          <div
+            data-testid="graph-panel"
+            className="flex min-h-0 flex-col px-13 pt-10 pb-7"
+          >
+            <div className="flex shrink-0 items-center gap-10 text-[9px]">
+              <span className="tracking-[0.06em] text-muted-foreground">
+                ACCELERATION
+              </span>
               <select
                 id="sensor-mode"
+                className="ml-auto max-w-190 rounded-[4px] border border-border bg-secondary px-3 py-2 text-[9px]"
                 aria-label="G-sensor display"
                 value={raw ? "raw" : "change"}
                 onChange={(e) => setRaw(e.target.value === "raw")}
@@ -102,17 +124,23 @@ export const TelemetryPanel = memo(function TelemetryPanel({
               <Button
                 variant="ghost"
                 size="icon-sm"
+                className="h-24 w-24"
                 aria-label="Close acceleration"
                 onClick={onCloseMotion}
               >
-                <X />
+                <X className="size-13" />
               </Button>
             </div>
-            <div className="axis-values">
+            <div className="flex shrink-0 gap-14 pt-9 pb-2 [@media(max-width:1180px)]:gap-8">
               {axes.map((a, i) => (
-                <label key={a.axis} style={{ color: a.color }}>
+                <label
+                  key={a.axis}
+                  className="grid grid-cols-[10px_auto] items-center gap-x-5 text-[9px] [@media(max-width:1180px)]:text-[8px]"
+                  style={{ color: a.color }}
+                >
                   <input
                     type="checkbox"
+                    className="size-9 accent-current"
                     checked={enabled[i]}
                     onChange={(e) =>
                       setEnabled((v) =>
@@ -123,7 +151,10 @@ export const TelemetryPanel = memo(function TelemetryPanel({
                     }
                   />
                   {a.name}
-                  <b id={`g-${a.axis.toLowerCase()}`}>
+                  <b
+                    id={`g-${a.axis.toLowerCase()}`}
+                    className="col-start-2 text-[11px] font-medium tabular-nums"
+                  >
                     {sample
                       ? `${(raw ? sample.acceleration[i] : sample.acceleration[i] - data.samples[Math.max(0, index - 1)].acceleration[i]).toFixed(2)} ${raw ? "g" : "Δg"}`
                       : "—"}
@@ -133,6 +164,7 @@ export const TelemetryPanel = memo(function TelemetryPanel({
             </div>
             <svg
               id="sensor-graph"
+              className="min-h-25 w-full flex-1 cursor-crosshair"
               viewBox="0 0 1000 130"
               preserveAspectRatio="none"
               role="img"
@@ -181,7 +213,7 @@ export const TelemetryPanel = memo(function TelemetryPanel({
               />
             </svg>
             {!data.samples.length && (
-              <small className="sensor-note">
+              <small className="mt-3 text-[8px] text-muted-foreground">
                 {data.message ?? "No sensor data"}
               </small>
             )}

@@ -11,7 +11,7 @@ The UI rewrite lives on `chore/react-desktop-ui`, based on `main` at `202d116`. 
 
 ## Boundaries and practices
 
-`App` composes the workspace. `useLibrary` owns discovery, filtering, and folder selection; groups are derived from library state. `usePlayback` owns media events, synchronized seeking, playback intent, cancellation, and stale-response protection. It exposes renderable state separately from video refs.
+`App` composes the workspace. `useLibrary` owns discovery, filtering, and folder selection; groups are derived from library state. `usePlayback` owns loading, seeking, cancellation, and stale-response protection. `PlaybackSync` owns the shared decoder intent and reconciles native play/pause events; it rejects late play events after Pause. Completion subscriptions advance through the full library without rebuilding media listeners. It exposes renderable state separately from video refs.
 
 Camera views own and dispose their WebGL resources, pointer listeners, resize observers, and animation loops. RouteMap owns its Leaflet instance and removes it when hidden or unmounted. The map is loaded as a separate local chunk. GPS and media requests start independently.
 
@@ -32,4 +32,6 @@ React StrictMode remains enabled in development. ESLint enforces the recommended
 
 ## Verification
 
-Run `bun run lint`, `bun run build`, and `bun run test`. The native smoke suite exercises real garage, night, and short recordings, plus the live map and React dialog/remount behavior. See `VALIDATION.md` for observed results.
+Run `bun run lint`, `bun run build`, and `bun run test`. The native smoke suite exercises real garage, night, short, and parking recordings, plus live maps, independent panels, expansion, repeated loading, and autoplay. Decoder-controller unit tests cover late native events and cancellation. See `VALIDATION.md` for observed results.
+
+Native traffic lights use Tauri’s [trafficLightPosition configuration](https://v2.tauri.app/reference/config/#windowconfig), aligned with the 49px React titlebar. Camera expansion retains the same video elements and renderer instances. Map and acceleration visibility are independent of the speed readout.

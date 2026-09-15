@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState, type RefObject } from "react";
-import { RotateCcw, Rotate3D } from "lucide-react";
+import { RotateCcw, Rotate3D, Maximize2, Minimize2 } from "lucide-react";
 import { Lens } from "@/projection";
 import { presets } from "@/camera-model";
 import type { Layout } from "@/lib/types";
@@ -8,14 +8,19 @@ interface Props {
   camera: "front" | "cabin";
   source: RefObject<HTMLVideoElement | null>;
   layout: Layout;
+  expanded: boolean;
+  onExpand: (camera: "front" | "cabin" | "rear") => void;
 }
 export const CameraView = memo(function CameraView({
   camera,
   source,
   layout,
+  expanded,
+  onExpand,
 }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null),
     lens = useRef<Lens | null>(null);
+  const pointer = useRef({ x: 0, y: 0, moved: false, active: false });
   const [fov, setFov] = useState(presets[camera].fov),
     [error, setError] = useState("");
   useEffect(() => {
@@ -58,19 +63,18 @@ export const CameraView = memo(function CameraView({
   return (
     <article className={`camera ${camera}`}>
       <header>
-        <span>
-          {camera === "front" ? "Front camera" : "Cabin"}
-          <small>
-            {camera === "front"
-              ? layout === "round"
-                ? "Original 360°"
-                : layout === "panorama"
-                  ? "Panorama"
-                  : "360° perspective"
-              : "Interior view"}
-          </small>
-        </span>
+        <span>{camera === "front" ? "Front camera" : "Cabin"}</span>
         <div className="camera-actions">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={
+              expanded ? "Restore camera layout" : `Expand ${camera} camera`
+            }
+            onClick={() => onExpand(camera)}
+          >
+            {expanded ? <Minimize2 /> : <Maximize2 />}
+          </Button>
           {camera === "cabin" && (
             <Button
               variant="ghost"
@@ -103,13 +107,49 @@ export const CameraView = memo(function CameraView({
           id={camera}
           ref={canvas}
           tabIndex={0}
-          aria-label={`${camera} camera. Drag to look, scroll to zoom, arrow keys to pan.`}
+          role="button"
+          aria-label={`${camera} camera. Click or press Enter to expand. Drag to look, scroll to zoom.`}
+          onPointerDown={(e) => {
+            pointer.current = {
+              x: e.clientX,
+              y: e.clientY,
+              moved: false,
+              active: true,
+            };
+          }}
+          onPointerMove={(e) => {
+            if (!pointer.current.active) return;
+            if (
+              Math.hypot(
+                e.clientX - pointer.current.x,
+                e.clientY - pointer.current.y,
+              ) > 5
+            )
+              pointer.current.moved = true;
+          }}
+          onPointerUp={() => {
+            pointer.current.active = false;
+          }}
+          onPointerCancel={() => {
+            pointer.current.active = false;
+            pointer.current.moved = false;
+          }}
+          onClick={() => {
+            const dragged = pointer.current.moved;
+            pointer.current.moved = false;
+            if (!dragged) onExpand(camera);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onExpand(camera);
+            }
+          }}
         />
         {error && <div className="camera-error">{error}</div>}
       </div>
       {camera === "front" && (
         <div className="lens-controls">
-          <span>Drag to look around</span>
           <label>
             Zoom
             <input

@@ -20,7 +20,6 @@
     $("search").value = name;
     $("search").dispatchEvent(new Event("input", { bubbles: true }));
     await wait(100);
-    await wait(100);
     const buttons = [...document.querySelectorAll(".clip")];
     const b = buttons.find((b) => b.textContent.includes(name));
     if (!b) throw Error("Missing fixture " + name);
@@ -104,11 +103,66 @@
     await wait(200);
     $("play").click();
     await wait(900);
-    check("short clip ends paused", source().paused && rear().paused);
+    await until(
+      () =>
+        $("clip-title").textContent === "000_025412_P.mp4" &&
+        !source().paused &&
+        !rear().paused,
+    );
+    check("autoplay advances across session folders", true);
+    check(
+      "autoplay updates the play button",
+      $("play").getAttribute("aria-label") === "Pause",
+    );
     $("play").click();
-    await wait(700);
-    check("short clip replays", source().currentTime < 2 && !source().paused);
+    await wait(250);
+    check(
+      "autoplay pauses both cameras",
+      source().paused &&
+        rear().paused &&
+        $("play").getAttribute("aria-label") === "Play",
+    );
+    await choose("000_023859_A.mp4");
+    $("seek").value = String(Number($("seek").max) - 0.3);
+    $("seek").dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(200);
     $("play").click();
+    await until(
+      () =>
+        $("clip-title").textContent === "001_023959_A.mp4" &&
+        !source().paused &&
+        !rear().paused,
+    );
+    check("autoplay advances within a session", true);
+    $("play").click();
+    await wait(100);
+    await choose("000_025643_A.mp4");
+    for (let i = 0; i < 6; i++) {
+      $("play").click();
+      await wait(i % 2 ? 70 : 500);
+      $("play").click();
+      source().dispatchEvent(new Event("canplay"));
+      rear().dispatchEvent(new Event("canplay"));
+      await wait(180);
+      check(
+        "pause wins after toggle " + i,
+        source().paused &&
+          rear().paused &&
+          $("play").getAttribute("aria-label") === "Play",
+      );
+    }
+    $("play").click();
+    await wait(400);
+    $("seek").value = "20";
+    $("seek").dispatchEvent(new Event("input", { bubbles: true }));
+    $("play").click();
+    await wait(600);
+    check(
+      "pause while seeking stops every camera",
+      source().paused &&
+        rear().paused &&
+        $("play").getAttribute("aria-label") === "Play",
+    );
     $("mute").click();
     await wait(100);
     check("mute", source().muted);
@@ -170,7 +224,7 @@
       document.querySelectorAll(".folder").length === 4,
     );
     await choose("000_023859_A.mp4");
-    await until(() => $("gps-state").textContent.includes("unavailable"));
+    await until(() => $("route-empty").textContent.includes("No GPS fix"));
     check(
       "no GPS fix does not show fake zero speed",
       $("car-speed").textContent === "—",
@@ -182,17 +236,119 @@
       ),
     );
     check("street map tiles render", true);
-    const telemetryToggle = document.querySelector(
-      '[aria-label="Show route and motion"]',
-    );
-    telemetryToggle.click();
+    document.querySelector('[aria-label="Close map"]').click();
     await wait(100);
-    check("telemetry can be hidden", !$("telemetry-panel"));
-    telemetryToggle.click();
+    check("map closes independently", !$("route-map") && !!$("sensor-graph"));
+    document.querySelector('[aria-label="Show map"]').click();
     await until(() => $("route-map") && $("route-empty").hidden);
+    document.querySelector('[aria-label="Close acceleration"]').click();
+    await wait(100);
+    check(
+      "acceleration closes independently",
+      !!$("route-map") && !$("sensor-graph"),
+    );
+    document.querySelector('[aria-label="Close map"]').click();
+    await wait(100);
+    check(
+      "speed remains when both panels close",
+      !$("telemetry-panel") && $("car-speed").textContent !== "—",
+    );
+    document.querySelector('[aria-label="Show map"]').click();
+    document.querySelector('[aria-label="Show acceleration"]').click();
+    await until(() => $("route-map") && $("sensor-graph"));
     check(
       "map remounts without duplicate containers",
       document.querySelectorAll(".leaflet-container").length === 1,
+    );
+    for (const camera of ["front", "cabin", "rear"]) {
+      $(camera).dispatchEvent(
+        new PointerEvent("pointermove", {
+          clientX: 140,
+          clientY: 100,
+          bubbles: true,
+        }),
+      );
+      $(camera).click();
+      await wait(150);
+      check(
+        camera + " click expands camera",
+        $("stage").dataset.layout === camera &&
+          document
+            .querySelector(".desktop-shell")
+            .classList.contains("camera-focused"),
+      );
+      check(
+        camera + " uses window width",
+        $("stage").getBoundingClientRect().width >
+          document.querySelector(".workspace").getBoundingClientRect().width *
+            0.95,
+      );
+      $("play").click();
+      await wait(350);
+      $("play").click();
+      await wait(150);
+      check(
+        camera + " expanded view pauses all cameras",
+        source().paused &&
+          rear().paused &&
+          $("play").getAttribute("aria-label") === "Play",
+      );
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      await wait(100);
+      check(
+        camera + " Escape restores layout",
+        !document
+          .querySelector(".desktop-shell")
+          .classList.contains("camera-focused"),
+      );
+    }
+    await choose("000_030445_P.mp4");
+    $("seek").value = String(Number($("seek").max) - 0.3);
+    $("seek").dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(200);
+    $("play").click();
+    await wait(1200);
+    check(
+      "last recording stops without wrapping",
+      $("clip-title").textContent === "000_030445_P.mp4" &&
+        source().paused &&
+        rear().paused &&
+        $("play").getAttribute("aria-label") === "Play",
+    );
+    $("play").click();
+    await wait(600);
+    check(
+      "last recording can replay",
+      source().currentTime < 2 && !source().paused && !rear().paused,
+    );
+    $("play").click();
+    await wait(100);
+    await choose("000_025643_A.mp4");
+    check("larger play control", $("play").getBoundingClientRect().width >= 48);
+    const titleBeforeStaleEnd = $("clip-title").textContent;
+    $("play").click();
+    await wait(300);
+    source().dispatchEvent(new Event("ended"));
+    await wait(150);
+    check(
+      "stale ended event cannot skip a recording",
+      $("clip-title").textContent === titleBeforeStaleEnd && !source().paused,
+    );
+    $("play").click();
+    await wait(100);
+    const previousUrl = source().currentSrc;
+    for (let i = 0; i < 6; i++) {
+      await choose(i % 2 ? "000_025643_A.mp4" : "000_023859_A.mp4");
+      check(
+        "repeated recording load " + i,
+        source().readyState >= 2 && rear().readyState >= 2,
+      );
+    }
+    check(
+      "reopening uses a fresh media session",
+      source().currentSrc !== previousUrl,
     );
     $("settings").click();
     await until(() => document.querySelector('[role="dialog"]'));
@@ -240,6 +396,10 @@
       status: $("status-text")?.textContent,
       mainError: source()?.error?.code,
       rearError: rear()?.error?.code,
+      mainReady: source()?.readyState,
+      rearReady: rear()?.readyState,
+      mainNetwork: source()?.networkState,
+      rearNetwork: rear()?.networkState,
     });
   }
   source()?.pause();
@@ -247,7 +407,7 @@
   await window.__TAURI_INTERNALS__.invoke("test_report", {
     report: JSON.stringify(
       {
-        suite: "react-luma",
+        suite: "playback-controls",
         startupError: document.getElementById("startup-error")?.textContent,
         results,
         passed: results.every((r) => r.pass),

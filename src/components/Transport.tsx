@@ -7,6 +7,9 @@ import {
   RotateCw,
   Volume2,
   VolumeX,
+  Map,
+  Activity,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "@/lib/types";
@@ -14,10 +17,25 @@ import type { usePlayback } from "@/hooks/use-playback";
 export function Transport({
   player: p,
   adjacent,
+  showMap,
+  showMotion,
+  onShowMap,
+  onShowMotion,
 }: {
   player: Omit<ReturnType<typeof usePlayback>, "source" | "rear">;
   adjacent: (delta: number) => void;
+  showMap: boolean;
+  showMotion: boolean;
+  onShowMap: () => void;
+  onShowMotion: () => void;
 }) {
+  const sample =
+    p.telemetry.samples[
+      Math.min(
+        p.telemetry.samples.length - 1,
+        Math.max(0, Math.floor(p.time * 10)),
+      )
+    ];
   return (
     <div className="playback">
       <div className="timeline">
@@ -39,8 +57,35 @@ export function Transport({
       </div>
       <div className="transport">
         <div className="transport-info">
-          <span className="status-dot" data-playing={p.playing} />
-          <span id="status-text" role="status">
+          <div className="speed-readout">
+            <Navigation size={16} />
+            <strong id="car-speed">
+              {sample?.speedKmh == null ? "—" : Math.round(sample.speedKmh)}
+            </strong>
+            <span>km/h</span>
+          </div>
+          <span className="recorded-time">{sample?.recordedAt ?? ""}</span>
+          {!showMap && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Show map"
+              onClick={onShowMap}
+            >
+              <Map />
+            </Button>
+          )}
+          {!showMotion && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Show acceleration"
+              onClick={onShowMotion}
+            >
+              <Activity />
+            </Button>
+          )}
+          <span id="status-text" className="sr-only" role="status">
             {p.status}
           </span>
         </div>

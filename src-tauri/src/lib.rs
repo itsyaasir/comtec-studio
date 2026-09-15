@@ -45,8 +45,8 @@ async fn open_recording(
         let playback = Playback {
             duration: tracks.duration,
             start: 0.0,
-            main_path: format!("track://localhost/{id}/main.mp4"),
-            rear_path: format!("track://localhost/{id}/rear.mp4"),
+            main_path: format!("track://localhost/{id}/main.mp4?generation={ticket}"),
+            rear_path: format!("track://localhost/{id}/rear.mp4?generation={ticket}"),
         };
         *app.state::<DirectPlayback>().0.lock().unwrap() = Some((id, tracks));
         Ok(playback)
@@ -219,6 +219,9 @@ pub fn run() {
             if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished)
                 && std::env::var_os("COMTEC_SMOKE_TEST").is_some()
             {
+                let _ = webview
+                    .window()
+                    .set_title("COMTEC Studio — automated playback checks");
                 let _ = webview.eval(include_str!("../../tests/native-smoke.js"));
             }
         })

@@ -11,16 +11,17 @@ The app contains its frontend and Rust media reader. Playback needs no Terminal,
 Choose **Open recordings folder**, then select a clip. The default first-run location is the user's Documents/Dashcam folder. The app remembers the selected folder. Hidden files, symlinks, and Preview directories are excluded.
 
 - Front and cabin are independently adjustable perspectives from the circular video track.
-- Rear uses the second camera track. Both videos share playback controls and timing.
-- Drag a camera to look around; scroll to zoom; use reset to restore its default view.
+- Rear uses the second camera track. One controller governs both native decoders, including late playback events and buffering.
+- Playback automatically advances through the library in folder/file order, clearing search/type filters as it advances. The final recording stops; Play replays it.
+- Click a camera to expand it across the window. Click again or press Escape to restore the layout. Drag the front/cabin view to look around; scroll to zoom.
 - Choose All views, Front, Split (front/cabin), Panorama, Round (original circular image), Cabin, or Rear. Cabin starts upright and includes a 180° rotation button.
 - The folder column groups clips by recording date/session. Select a folder to see its clips, or search across the library. Driving, parking, and event filters use COMTEC file types.
-- The telemetry panel shows recorded km/h, recording time, a GPS route with a moving position, and X/Y/Z acceleration graphs. Click the graph to seek. GPS-unavailable recordings show no invented position or zero speed.
+- The transport strip shows recorded km/h and recording time. Separate panels show a GPS route with a moving position and X/Y/Z acceleration graphs. Click the graph to seek. GPS-unavailable recordings show no invented position or zero speed.
 - Switch between raw acceleration (including gravity) and sample-to-sample changes (Δg). Axis colors follow the original viewer: green forward/backward, red left/right, purple up/down.
 - Space plays or pauses; left/right arrows seek five seconds. Focused camera arrow keys pan instead.
 - F toggles native fullscreen, retaining the transport controls.
 - Settings includes system/light/dark appearance, playback information, and keyboard shortcuts.
-- Toggle the library or telemetry from the titlebar. Drag the divider above telemetry to resize it. ⌘ K focuses search.
+- Toggle the library from the titlebar. Close Map or Acceleration independently using its × button; restore either from the transport strip. Drag the divider above the panels to resize them. ⌘ K focuses search.
 
 Original footage is opened read-only. Supported recordings play directly through an in-memory camera index, with no prepared video copies. Keep the original drive connected while playing. Unsupported layouts show an error; there is no conversion fallback. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
 

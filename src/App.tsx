@@ -15,7 +15,6 @@ import {
   Moon,
   Monitor,
   FolderOpen,
-  Map,
   LoaderCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,12 +26,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { CameraView } from "@/components/CameraView";
 import { LibrarySidebar } from "@/components/LibrarySidebar";
 import { TelemetryPanel } from "@/components/TelemetryPanel";
@@ -61,27 +55,46 @@ export default function App() {
   const { select, selected } = player;
   const { setFolder } = library;
   const selectRecording = useCallback(
-    (clip: Parameters<typeof select>[0]) => {
+    (clip: Parameters<typeof select>[0], autoplay = false) => {
       setFolder(clip.folder);
-      void select(clip);
+      void select(clip, autoplay);
     },
     [select, setFolder],
   );
   const [layout, setLayout] = useState<Layout>("all"),
     [settings, setSettings] = useState(false),
     [sidebar, setSidebar] = useState(true),
-    [telemetry, setTelemetry] = useState(true),
+    [showMap, setShowMap] = useState(true),
+    [showMotion, setShowMotion] = useState(true),
+    [expanded, setExpanded] = useState<"front" | "cabin" | "rear" | null>(null),
     [theme, setTheme] = useState<Theme>(initialTheme),
-    [telemetryHeight, setTelemetryHeight] = useState(240);
+    [telemetryHeight, setTelemetryHeight] = useState(200);
   const drag = useRef<{ y: number; height: number } | null>(null);
   const adjacent = useCallback(
     (delta: number) => {
       const i = library.filtered.findIndex((c) => c.id === selected?.id);
       const next = library.filtered[i + delta];
-      if (next) selectRecording(next);
+      if (next) selectRecording(next, player.playing);
     },
-    [library.filtered, selected?.id, selectRecording],
+    [library.filtered, selected?.id, selectRecording, player.playing],
   );
+  const { subscribeEnded } = player;
+  const autoNext = useEffectEvent(() => {
+    const index = library.clips.findIndex((clip) => clip.id === selected?.id);
+    const next = index >= 0 ? library.clips[index + 1] : undefined;
+    if (next) {
+      library.setQuery("");
+      library.setFilter("all");
+      selectRecording(next, true);
+    }
+  });
+  useEffect(() => subscribeEnded(() => autoNext()), [subscribeEnded]);
+  const expandCamera = useCallback(
+    (camera: "front" | "cabin" | "rear") =>
+      setExpanded((current) => (current === camera ? null : camera)),
+    [],
+  );
+  const cameraLayout = expanded ?? layout;
   const fullscreen = useCallback(() => {
     const window = getCurrentWindow();
     void window.isFullscreen().then((value) => window.setFullscreen(!value));
@@ -100,6 +113,10 @@ export default function App() {
   }, [theme]);
   const onKey = useEffectEvent((e: KeyboardEvent) => {
     if (settings) return;
+    if (e.key === "Escape" && expanded) {
+      setExpanded(null);
+      return;
+    }
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
       setSidebar(true);
@@ -130,7 +147,7 @@ export default function App() {
   return (
     <TooltipProvider>
       <Dialog open={settings} onOpenChange={setSettings}>
-        <div className="desktop-shell">
+        <div className={`desktop-shell ${expanded ? "camera-focused" : ""}`}>
           <header className="titlebar" data-tauri-drag-region>
             <div className="titlebar-left">
               <Button
@@ -146,24 +163,7 @@ export default function App() {
                 COMTEC <b>Studio</b>
               </span>
             </div>
-            <span className="titlebar-caption" data-tauri-drag-region>
-              Recording workspace
-            </span>
             <div className="titlebar-right">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Show route and motion"
-                    aria-pressed={telemetry}
-                    onClick={() => setTelemetry((v) => !v)}
-                  >
-                    <Map size={16} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Route & motion</TooltipContent>
-              </Tooltip>
               <DialogTrigger asChild>
                 <Button
                   id="settings"
@@ -193,12 +193,10 @@ export default function App() {
                       : "YOUR RECORDINGS"}
                   </div>
                   <h2 id="clip-title">
-                    {player.selected?.name ?? "Every angle. One timeline."}
+                    {player.selected?.name ?? "Recordings"}
                   </h2>
                   <span className="recording-kind">
-                    {player.selected
-                      ? recordingKind(player.selected.name)
-                      : "Front, cabin and rear — together"}
+                    {player.selected ? recordingKind(player.selected.name) : ""}
                   </span>
                 </div>
                 <div className="view-switch" aria-label="Camera layout">
@@ -206,8 +204,11 @@ export default function App() {
                     <button
                       key={view.value}
                       data-layout={view.value}
-                      aria-pressed={layout === view.value}
-                      onClick={() => setLayout(view.value)}
+                      aria-pressed={cameraLayout === view.value}
+                      onClick={() => {
+                        setExpanded(null);
+                        setLayout(view.value);
+                      }}
                     >
                       {view.label}
                     </button>
@@ -228,15 +229,24 @@ export default function App() {
                   {player.error}
                 </p>
               )}
-              <div className="stage" id="stage" data-layout={layout}>
-                <CameraView camera="front" source={sourceRef} layout={layout} />
-                <CameraView camera="cabin" source={sourceRef} layout={layout} />
+              <div className="stage" id="stage" data-layout={cameraLayout}>
+                <CameraView
+                  camera="front"
+                  source={sourceRef}
+                  layout={cameraLayout}
+                  expanded={expanded === "front"}
+                  onExpand={expandCamera}
+                />
+                <CameraView
+                  camera="cabin"
+                  source={sourceRef}
+                  layout={cameraLayout}
+                  expanded={expanded === "cabin"}
+                  onExpand={expandCamera}
+                />
                 <article className="camera rear">
                   <header>
-                    <span>
-                      Rear camera<small>Full HD</small>
-                    </span>
-                    <span className="camera-number">03</span>
+                    <span>Rear camera</span>
                   </header>
                   <div className="camera-image">
                     <video
@@ -246,6 +256,17 @@ export default function App() {
                       muted
                       crossOrigin="anonymous"
                       preload="auto"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={
+                        expanded === "rear"
+                          ? "Restore camera layout"
+                          : "Expand rear camera"
+                      }
+                      onClick={() => expandCamera("rear")}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") expandCamera("rear");
+                      }}
                     />
                   </div>
                 </article>
@@ -266,11 +287,11 @@ export default function App() {
                       ? "Opening recording…"
                       : player.error
                         ? "Unable to open recording"
-                        : "A clearer view of your journey"}
+                        : "Select a recording"}
                   </h3>
                   <p>
                     {player.error ||
-                      "Choose a recording to explore every camera angle, its route, and the drive behind it."}
+                      "Choose a session and recording from your library."}
                   </p>
                   {!player.loading && !player.selected && (
                     <Button onClick={library.open}>
@@ -278,10 +299,9 @@ export default function App() {
                       Open recordings folder
                     </Button>
                   )}
-                  <span>Private playback · Originals stay untouched</span>
                 </div>
               </div>
-              {telemetry && (
+              {(showMap || showMotion) && (
                 <>
                   <div
                     className="telemetry-resize"
@@ -337,19 +357,22 @@ export default function App() {
                       time={player.time}
                       duration={player.media?.duration ?? 1}
                       seek={player.jump}
+                      showMap={showMap}
+                      showMotion={showMotion}
+                      onCloseMap={() => setShowMap(false)}
+                      onCloseMotion={() => setShowMotion(false)}
                     />
                   </div>
                 </>
               )}
-              <Transport player={player} adjacent={adjacent} />
-              <footer className="review-footer">
-                <span>COMTEC multi-camera playback</span>
-                <span>
-                  {ready
-                    ? "Original quality · All cameras synchronized"
-                    : "Ready when you are"}
-                </span>
-              </footer>
+              <Transport
+                player={player}
+                adjacent={adjacent}
+                showMap={showMap}
+                showMotion={showMotion}
+                onShowMap={() => setShowMap(true)}
+                onShowMotion={() => setShowMotion(true)}
+              />
             </main>
           </div>
           <video

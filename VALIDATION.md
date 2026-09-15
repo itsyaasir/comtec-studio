@@ -1,6 +1,17 @@
 # Validation — 15 September 2026
 
-## Current branch: React desktop UI
+## Playback controls and workspace refinements
+
+- All **81 native checks** pass with the real recordings, including rapid play/pause, pause during seeking, autoplay within/across sessions, final-recording stop/replay, stale completion events, and six repeated recording loads.
+- Four new decoder-controller regression tests pass (eight frontend tests total). They cover late play completion after Pause, buffering, a stopped decoder rejoining playback, and disposal during a pending play call.
+- All 12 Rust tests pass with actual fixtures enabled; React lint, TypeScript, Clippy with warnings denied, and production packaging pass.
+- Map and Acceleration close independently and can be restored from the transport strip. Speed remains visible with both panels closed. Redundant GPS/playback captions and the footer were removed.
+- Clicking front/cabin/rear expands that camera across the window; Escape restores the previous layout. Native tests verify window-width expansion and pausing all cameras while expanded. Hover movement no longer suppresses accessibility clicks.
+- Native traffic lights, sidebar button, and app title share the same baseline. Play/Pause is 50px, with larger adjacent controls.
+- An intermittent repeated-load timeout occurred during an earlier run. Per-open media URLs now include a generation token to avoid sharing a WKWebView loading session. The final suite, including repeated opens, passed.
+- Original fixture checksums remain unchanged. Installed viewers are not replaced.
+
+## React desktop UI rewrite
 
 `chore/react-desktop-ui` rewrites the frontend using React 19.3, shadcn Luma, and Tailwind 4 on Vite 8. The tested Rust direct-playback backend remains unchanged.
 

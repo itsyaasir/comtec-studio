@@ -607,7 +607,7 @@ kbd {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 10px;
   color: #979ba4;
   font-size: 9px;
@@ -1169,4 +1169,131 @@ input[type="range"] {
 .startup-error pre {
   white-space: pre-wrap;
   margin-top: 8px;
+}
+/* Shared 49px titlebar baseline, including the native traffic lights. */
+.titlebar {
+  padding-left: 90px;
+}
+.titlebar-left {
+  gap: 14px;
+}
+.titlebar-left > button {
+  width: 30px;
+  height: 30px;
+}
+.telemetry-body.single-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+.telemetry-body.single-panel .map-section {
+  border-right: 0;
+}
+.map-section > header {
+  right: 8px;
+  justify-content: flex-start;
+  pointer-events: none;
+  width: auto;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+.map-section > header > span {
+  background: var(--background);
+  padding: 4px 7px;
+  border-radius: 4px;
+}
+.map-section > header > svg {
+  display: none;
+}
+.map-section > header button {
+  margin-left: auto;
+  background: var(--background);
+  pointer-events: auto;
+}
+.graph-heading > button,
+.map-section > header > button {
+  width: 24px;
+  height: 24px;
+}
+.graph-heading > button svg,
+.map-section > header > button svg {
+  width: 13px;
+  height: 13px;
+}
+.graph-heading select {
+  margin-left: auto;
+}
+.transport {
+  grid-template-columns: minmax(0, 1fr) auto minmax(90px, 1fr);
+  padding: 8px 0 4px;
+}
+.transport-info {
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-right: 12px;
+}
+.transport-info .speed-readout {
+  color: var(--foreground);
+}
+.transport-info .speed-readout strong {
+  font-size: 23px;
+}
+.recorded-time {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+.transport-buttons {
+  gap: 6px;
+}
+.transport-buttons > button {
+  width: 40px;
+  height: 40px;
+}
+.transport-buttons > button svg {
+  width: 19px;
+  height: 19px;
+}
+.transport-buttons > .play-button {
+  width: 50px;
+  height: 50px;
+}
+.transport-buttons > .play-button svg {
+  width: 22px;
+  height: 22px;
+}
+.transport-buttons button small {
+  font-size: 8px;
+}
+.camera-focused .workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+.camera-focused
+  :is(
+    .library-sidebar,
+    .review-heading,
+    .telemetry-container,
+    .telemetry-resize
+  ) {
+  display: none;
+}
+.camera-focused .stage {
+  margin-top: 14px;
+}
+.camera-image video {
+  cursor: zoom-in;
+}
+.camera-focused .camera-image video {
+  cursor: zoom-out;
+}
+@media (max-width: 1180px) {
+  .recorded-time {
+    display: none;
+  }
+  .transport-buttons {
+    gap: 2px;
+  }
+  .audio input {
+    width: 50px;
+  }
 }

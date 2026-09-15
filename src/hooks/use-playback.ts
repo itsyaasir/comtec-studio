@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { PlaybackSync } from "@/playback-sync";
 import { invoke } from "@tauri-apps/api/core";
 import type { Playback, Recording, Telemetry } from "@/lib/types";
 
@@ -47,25 +48,22 @@ export function usePlayback() {
   const [rate, setRate] = useState(1),
     [volume, setVolume] = useState(0.7),
     [muted, setMuted] = useState(false);
+  const sync = useRef<PlaybackSync | null>(null);
+  const endedListeners = useRef(new Set<() => void>());
+  const subscribeEnded = useCallback((listener: () => void) => {
+    endedListeners.current.add(listener);
+    return () => {
+      endedListeners.current.delete(listener);
+    };
+  }, []);
   const session = useRef({
     generation: 0,
-    intent: 0,
-    wanted: false,
-    starting: false,
-    loading: false,
     media: undefined as Playback | undefined,
     abort: new AbortController(),
     disposed: false,
-    retry: undefined as ReturnType<typeof setTimeout> | undefined,
+    ended: false,
   });
-  const pause = useCallback(() => {
-    const s = session.current;
-    s.intent++;
-    s.wanted = false;
-    source.current?.pause();
-    rear.current?.pause();
-    setPlaying(false);
-  }, []);
+  const pause = useCallback(() => sync.current?.pause(), []);
   const jump = useCallback((position: number) => {
     const m = session.current.media;
     if (!m || !source.current || !rear.current) return;
@@ -73,89 +71,24 @@ export function usePlayback() {
     source.current.currentTime = rear.current.currentTime = t;
     setTime(t);
   }, []);
-  const resume = useCallback(
-    async function resume() {
-      const s = session.current,
-        main = source.current,
-        back = rear.current;
-      if (
-        !main ||
-        !back ||
-        !s.wanted ||
-        !s.media ||
-        s.starting ||
-        s.loading ||
-        (!main.paused && !back.paused)
-      )
-        return;
-      s.starting = true;
-      const generation = s.generation,
-        intent = s.intent;
-      try {
-        if (
-          Math.abs(main.currentTime - back.currentTime) > 0.1 &&
-          !back.seeking
-        )
-          back.currentTime = main.currentTime;
-        await Promise.all([main.play(), back.play()]);
-        if (generation === s.generation && s.wanted) setStatus("Playing");
-        if (generation === s.generation && !s.wanted) {
-          main.pause();
-          back.pause();
-        }
-      } catch (e) {
-        if (
-          generation === s.generation &&
-          intent === s.intent &&
-          s.wanted &&
-          !(e instanceof DOMException && e.name === "AbortError")
-        ) {
-          pause();
-          setError(String(e));
-          setStatus("Playback interrupted");
-        }
-      } finally {
-        s.starting = false;
-        if (
-          !s.disposed &&
-          generation === s.generation &&
-          s.wanted &&
-          main.readyState >= 3 &&
-          back.readyState >= 3 &&
-          (main.paused || back.paused)
-        )
-          s.retry = setTimeout(() => {
-            if (generation === s.generation && !s.disposed) void resume();
-          }, 50);
-      }
-    },
-    [pause],
-  );
-  const toggle = useCallback(async () => {
+  const toggle = useCallback(() => {
     const s = session.current;
     if (!s.media) return;
-    if (s.wanted) {
-      pause();
-      setStatus("Paused");
-      return;
-    }
-    if ((source.current?.currentTime ?? 0) >= s.media.duration - 0.08)
+    if ((source.current?.currentTime ?? 0) >= s.media.duration - 0.08) {
+      s.ended = false;
       jump(s.media.start);
-    s.intent++;
-    s.wanted = true;
-    setPlaying(true);
-    setStatus("Playing");
-    await resume();
-  }, [jump, pause, resume]);
+    }
+    sync.current?.toggle();
+  }, [jump]);
   const reset = useCallback(() => {
     const s = session.current;
     s.generation++;
-    clearTimeout(s.retry);
+
     s.abort.abort();
     s.abort = new AbortController();
-    pause();
+    sync.current?.setActive(false);
     s.media = undefined;
-    s.loading = false;
+    s.ended = false;
     setLoading(false);
     setStatus("Ready");
     setMedia(undefined);
@@ -167,14 +100,14 @@ export function usePlayback() {
       v?.removeAttribute("src");
       v?.load();
     }
-  }, [pause]);
+  }, []);
   const select = useCallback(
-    async (clip: Recording) => {
+    async (clip: Recording, autoplay = false) => {
       reset();
       const s = session.current,
         n = s.generation;
       setSelected(clip);
-      s.loading = true;
+
       setLoading(true);
       setStatus("Opening recording…");
       const data = invoke<Telemetry>("telemetry", { id: clip.id }).catch(
@@ -199,8 +132,10 @@ export function usePlayback() {
         if (n !== s.generation) return;
         s.media = result;
         setMedia(result);
+        sync.current?.setActive(true);
         jump(result.start);
         setStatus("Ready");
+        if (autoplay) sync.current?.play();
         void data.then((t) => {
           if (n === s.generation) setTelemetry(t);
         });
@@ -212,7 +147,6 @@ export function usePlayback() {
         }
       } finally {
         if (n === s.generation) {
-          s.loading = false;
           setLoading(false);
         }
       }
@@ -226,49 +160,42 @@ export function usePlayback() {
     s.disposed = false;
     let frame = 0,
       last = 0;
-    const wait = () => {
-      if (s.wanted) {
-        main.pause();
-        back.pause();
-        setStatus("Buffering…");
-      }
-    };
-    const canplay = () => {
-      if (s.wanted && main.readyState >= 3 && back.readyState >= 3)
-        void resume();
-    };
+    const controller = new PlaybackSync(main, back, setPlaying, (error) => {
+      setError(String(error));
+      setStatus("Playback interrupted");
+    });
+    sync.current = controller;
     const fail = () => {
       if (s.media) {
-        pause();
-        setError(
-          "Camera playback failed. Check the recording drive and select the clip to retry.",
-        );
+        controller.pause();
+        setError("Camera playback failed. Select the recording to retry.");
       }
     };
     const end = () => {
-      pause();
+      if (
+        !s.media ||
+        s.ended ||
+        !controller.wanted ||
+        main.currentTime < s.media.duration - 0.08
+      )
+        return;
+      s.ended = true;
+      controller.pause();
       setStatus("End of recording");
+      for (const listener of endedListeners.current) listener();
     };
-    for (const video of [main, back]) {
-      video.addEventListener("waiting", wait);
-      video.addEventListener("canplay", canplay);
-      video.addEventListener("error", fail);
-    }
     main.addEventListener("ended", end);
+    main.addEventListener("error", fail);
+    back.addEventListener("error", fail);
     const tick = (now: number) => {
       if (s.media) {
-        if (s.wanted && main.currentTime >= s.media.duration - 0.04) {
-          end();
-          jump(s.media.duration);
-        }
         if (
-          s.wanted &&
-          !main.paused &&
-          !main.seeking &&
-          !back.seeking &&
-          Math.abs(main.currentTime - back.currentTime) > 0.1
+          controller.wanted &&
+          main.currentTime >= s.media.duration - 0.04 &&
+          !main.seeking
         )
-          back.currentTime = main.currentTime;
+          end();
+        void controller.reconcile();
         if (now - last > 90) {
           setTime(main.currentTime);
           last = now;
@@ -279,22 +206,17 @@ export function usePlayback() {
     frame = requestAnimationFrame(tick);
     return () => {
       s.disposed = true;
-      clearTimeout(s.retry);
       s.generation++;
       s.abort.abort();
-      s.wanted = false;
-      main.pause();
-      back.pause();
+      controller.dispose();
+      sync.current = null;
       cancelAnimationFrame(frame);
-      for (const video of [main, back]) {
-        video.removeEventListener("waiting", wait);
-        video.removeEventListener("canplay", canplay);
-        video.removeEventListener("error", fail);
-      }
       main.removeEventListener("ended", end);
+      main.removeEventListener("error", fail);
+      back.removeEventListener("error", fail);
       void invoke("cancel").catch(() => {});
     };
-  }, [jump, pause, resume]);
+  }, []);
   useEffect(() => {
     if (source.current && rear.current)
       source.current.playbackRate = rear.current.playbackRate = rate;
@@ -328,5 +250,6 @@ export function usePlayback() {
     toggle,
     select,
     reset,
+    subscribeEnded,
   };
 }

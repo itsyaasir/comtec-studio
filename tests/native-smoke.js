@@ -211,7 +211,7 @@
       "all graph rows fit the panel",
       graphBounds.height > 40 && graphBounds.bottom <= panelBounds.bottom,
     );
-    for (const mode of ["split", "panorama", "round", "cabin", "rear", "all"]) {
+    for (const mode of ["split", "panorama", "round", "all"]) {
       document.querySelector('button[data-layout="' + mode + '"]').click();
       await wait(150);
       check(mode + " layout active", $("stage").dataset.layout === mode);

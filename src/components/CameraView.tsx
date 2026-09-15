@@ -2,12 +2,12 @@ import { memo, useEffect, useRef, useState, type RefObject } from "react";
 import { RotateCcw, Rotate3D, Maximize2, Minimize2 } from "lucide-react";
 import { Lens } from "@/projection";
 import { presets } from "@/camera-model";
-import type { Layout } from "@/lib/types";
+import type { StageLayout } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 interface Props {
   camera: "front" | "cabin";
   source: RefObject<HTMLVideoElement | null>;
-  layout: Layout;
+  layout: StageLayout;
   expanded: boolean;
   onExpand: (camera: "front" | "cabin" | "rear") => void;
 }

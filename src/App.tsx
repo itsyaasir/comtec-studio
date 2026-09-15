@@ -34,15 +34,13 @@ import { Transport } from "@/components/Transport";
 import { useLibrary } from "@/hooks/use-library";
 import { usePlayback } from "@/hooks/use-playback";
 import { folderLabel, recordingKind } from "@/library-model";
-import type { Layout } from "@/lib/types";
+import type { Layout, StageLayout } from "@/lib/types";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 const layouts: { value: Layout; label: string }[] = [
   { value: "all", label: "All views" },
-  { value: "front", label: "Front" },
   { value: "split", label: "Split" },
   { value: "panorama", label: "Panorama" },
   { value: "round", label: "Round" },
-  { value: "cabin", label: "Cabin" },
-  { value: "rear", label: "Rear" },
 ];
 type Theme = "system" | "light" | "dark";
 function initialTheme(): Theme {
@@ -94,7 +92,7 @@ export default function App() {
       setExpanded((current) => (current === camera ? null : camera)),
     [],
   );
-  const cameraLayout = expanded ?? layout;
+  const cameraLayout: StageLayout = expanded ?? layout;
   const fullscreen = useCallback(() => {
     const window = getCurrentWindow();
     void window.isFullscreen().then((value) => window.setFullscreen(!value));
@@ -199,21 +197,29 @@ export default function App() {
                     {player.selected ? recordingKind(player.selected.name) : ""}
                   </span>
                 </div>
-                <div className="view-switch" aria-label="Camera layout">
+                <ToggleGroup
+                  type="single"
+                  value={cameraLayout}
+                  onValueChange={(v) => {
+                    if (!v) return;
+                    setExpanded(null);
+                    setLayout(v as Layout);
+                  }}
+                  spacing={0.5}
+                  aria-label="Camera layout"
+                  className="max-[1180px]:order-3 rounded-[7px] border border-border bg-secondary p-[3px]"
+                >
                   {layouts.map((view) => (
-                    <button
+                    <ToggleGroupItem
                       key={view.value}
+                      value={view.value}
                       data-layout={view.value}
-                      aria-pressed={cameraLayout === view.value}
-                      onClick={() => {
-                        setExpanded(null);
-                        setLayout(view.value);
-                      }}
+                      className="h-auto min-w-0 rounded-[4px] px-[7px] py-[4px] text-[11px] font-normal text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-[0_1px_3px_rgb(0_0_0/0.13)]"
                     >
                       {view.label}
-                    </button>
+                    </ToggleGroupItem>
                   ))}
-                </div>
+                </ToggleGroup>
                 <Button
                   id="fullscreen"
                   variant="ghost"

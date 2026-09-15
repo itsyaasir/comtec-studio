@@ -282,23 +282,6 @@ kbd {
   white-space: nowrap;
   font-size: 10px;
 }
-.library-filter {
-  display: flex;
-  padding: 0 16px 12px;
-  gap: 3px;
-}
-.library-filter button {
-  flex: 1;
-  padding: 4px 1px;
-  border-radius: 5px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-.library-filter button[aria-pressed="true"] {
-  background: var(--selection);
-  color: var(--selection-text);
-  font-weight: 600;
-}
 .library-columns {
   flex: 1;
   min-height: 0;
@@ -488,26 +471,6 @@ kbd {
 .recording-kind {
   font-size: 10px;
   color: var(--muted-foreground);
-}
-.view-switch {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-}
-.view-switch button {
-  padding: 4px 7px;
-  font-size: 11px;
-  border-radius: 4px;
-  white-space: nowrap;
-  color: var(--muted-foreground);
-}
-.view-switch button[aria-pressed="true"] {
-  background: var(--background);
-  color: var(--foreground);
-  box-shadow: 0 1px 3px #0002;
 }
 .stage {
   flex: 1;
@@ -1082,9 +1045,6 @@ input[type="range"] {
   }
   .recording-heading {
     flex-basis: calc(100% - 40px);
-  }
-  .view-switch {
-    order: 3;
   }
   .telemetry-caption,
   .graph-heading small {

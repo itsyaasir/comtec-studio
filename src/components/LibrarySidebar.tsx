@@ -9,6 +9,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   folderLabel,
   recordingKind,
@@ -66,23 +67,33 @@ export const LibrarySidebar = memo(function LibrarySidebar({
         />
         <kbd>⌘ K</kbd>
       </label>
-      <div className="library-filter" aria-label="Recording type">
-        {[
-          ["all", "All clips"],
-          ["A", "Driving"],
-          ["P", "Parking"],
-          ["events", "Events"],
-        ].map(([value, label]) => (
-          <button
+      <ToggleGroup
+        type="single"
+        value={l.filter}
+        onValueChange={(v) => {
+          if (v) l.setFilter(v);
+        }}
+        aria-label="Recording type"
+        className="mx-[16px] mb-[12px] grid w-auto grid-cols-4 gap-[3px]"
+      >
+        {(
+          [
+            ["all", "All clips"],
+            ["A", "Driving"],
+            ["P", "Parking"],
+            ["events", "Events"],
+          ] as const
+        ).map(([value, label]) => (
+          <ToggleGroupItem
             key={value}
+            value={value}
             data-filter={value}
-            aria-pressed={l.filter === value}
-            onClick={() => l.setFilter(value)}
+            className="h-auto min-w-0 rounded-[5px] px-[1px] py-[4px] text-[11px] font-normal text-muted-foreground data-[state=on]:bg-[var(--selection)] data-[state=on]:font-semibold data-[state=on]:text-[var(--selection-text)]"
           >
             {label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
       <div className="library-columns">
         <div className="folder-column">
           <div className="column-heading">SESSIONS</div>

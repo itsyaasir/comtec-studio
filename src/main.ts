@@ -1,4 +1,4 @@
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   createIcons,
@@ -38,8 +38,7 @@ interface Library {
   root: string;
   clips: Clip[];
 }
-interface Prepared {
-  direct: boolean;
+interface Playback {
   duration: number;
   start: number;
   mainPath: string;
@@ -86,7 +85,7 @@ $("app").innerHTML = `
 <section id="telemetry-panel" aria-label="Speed, GPS route and acceleration"></section>
 <div class="playback"><div class="timeline"><span id="elapsed">00:00</span><input id="seek" type="range" min="0" max="1" step="0.01" value="0" aria-label="Playback position" disabled><span id="duration">00:00</span></div><div class="transport"><div class="transport-left"><button id="previous" aria-label="Previous recording" title="Previous recording">${icon("skip-back")}</button><button id="back" aria-label="Back 5 seconds" title="Back 5 seconds">${icon("chevron-left")}<small>5s</small></button><button id="play" class="play" aria-label="Play" title="Play / Pause (Space)" disabled>${icon("play")}</button><button id="forward" aria-label="Forward 5 seconds" title="Forward 5 seconds"><small>5s</small>${icon("chevron-right")}</button><button id="next" aria-label="Next recording" title="Next recording">${icon("skip-forward")}</button><span class="divider"></span><select id="speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div><div class="audio"><button id="mute" aria-label="Mute audio">${icon("volume-2")}</button><input id="volume" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Volume"></div></div></div>
 <footer><div id="status" role="status" aria-live="polite"><span class="dot"></span><span id="status-text">Ready to explore</span></div><span id="technical">COMTEC multi-camera playback</span></footer></main></div>
-<dialog id="preferences"><div class="dialog-title"><h2>Workspace settings</h2><button id="close-settings" aria-label="Close settings">${icon("x")}</button></div><section><h3>Playback cache</h3><p>Prepared camera tracks make repeat playback faster. Clearing them does not affect your recordings.</p><div class="cache-row"><span id="cache-size">Calculating…</span><button id="clear-cache">Clear playback cache</button></div></section><section><h3>Keyboard shortcuts</h3><dl><dt>Play / pause</dt><dd>Space</dd><dt>Seek 5 seconds</dt><dd>← / →</dd><dt>Fullscreen</dt><dd>F</dd><dt>Pan a focused camera</dt><dd>Arrow keys</dd><dt>Zoom a focused camera</dt><dd>+ / −</dd></dl></section><p class="about">COMTEC Studio 0.1 · Independent viewer<br>Approximate 240° lens correction. Uses FFmpeg 8.0.1 under LGPL 2.1 or later; source, license and build instructions are included in the app bundle.</p></dialog>
+<dialog id="preferences"><div class="dialog-title"><h2>Workspace settings</h2><button id="close-settings" aria-label="Close settings">${icon("x")}</button></div><section><h3>Playback</h3><p>Recordings play directly from the original files. Keep the recording drive connected while watching.</p></section><section><h3>Keyboard shortcuts</h3><dl><dt>Play / pause</dt><dd>Space</dd><dt>Seek 5 seconds</dt><dd>← / →</dd><dt>Fullscreen</dt><dd>F</dd><dt>Pan a focused camera</dt><dd>Arrow keys</dd><dt>Zoom a focused camera</dt><dd>+ / −</dd></dl></section><p class="about">COMTEC Studio 0.1 · Independent viewer<br>Approximate 240° lens correction.</p></dialog>
 <video id="source" playsinline preload="auto" crossorigin="anonymous" class="decoder"></video>`;
 icons();
 const source = $<HTMLVideoElement>("source"),
@@ -94,7 +93,7 @@ const source = $<HTMLVideoElement>("source"),
   seek = $<HTMLInputElement>("seek");
 let clips: Clip[] = [],
   selected: Clip | undefined,
-  current: Prepared | undefined,
+  current: Playback | undefined,
   generation = 0,
   loading = false,
   wanted = false,
@@ -341,38 +340,17 @@ async function select(clip: Clip) {
     id: clip.id,
   }).catch((e) => ({ samples: [], message: String(e) }));
   try {
-    let result = await invoke<Prepared>("open_recording", { id: clip.id });
+    const result = await invoke<Playback>("open_recording", { id: clip.id });
     if (n !== generation) return;
-    const loadTracks = async (media: Prepared) => {
-      const mainReady = loaded(source, loadAbort.signal),
-        rearReady = loaded(rear, loadAbort.signal);
-      source.src = media.direct
-        ? media.mainPath
-        : convertFileSrc(media.mainPath);
-      rear.src = media.direct ? media.rearPath : convertFileSrc(media.rearPath);
-      source.load();
-      rear.load();
-      await Promise.all([mainReady, rearReady]);
-    };
-    try {
-      await loadTracks(result);
-    } catch (e) {
-      if (!result.direct || n !== generation || loadAbort.signal.aborted)
-        throw e;
-      loadAbort.abort();
-      loadAbort = new AbortController();
-      status("Preparing compatible playback…");
-      overlay(
-        "Preparing compatible playback",
-        "This recording needs separate camera files. Video quality stays unchanged.",
-      );
-      result = await invoke<Prepared>("prepare", { id: clip.id });
-      if (n !== generation) return;
-      await loadTracks(result);
-    }
+    const mainReady = loaded(source, loadAbort.signal),
+      rearReady = loaded(rear, loadAbort.signal);
+    source.src = result.mainPath;
+    rear.src = result.rearPath;
+    source.load();
+    rear.load();
+    await Promise.all([mainReady, rearReady]);
     if (n !== generation) return;
     current = result;
-    source.dataset.delivery = result.direct ? "direct" : "cache";
     void telemetryPromise.then((data) => {
       if (n === generation) telemetryPanel.set(data, result.duration);
     });
@@ -596,32 +574,8 @@ async function fullscreen() {
 }
 $("fullscreen").onclick = () => void fullscreen();
 const preferences = $<HTMLDialogElement>("preferences");
-$("settings").onclick = async () => {
-  preferences.showModal();
-  $("cache-size").textContent =
-    `${((await invoke<number>("cache_size")) / 1024 / 1024).toFixed(0)} MB used`;
-};
+$("settings").onclick = () => preferences.showModal();
 $("close-settings").onclick = () => preferences.close();
-$("clear-cache").onclick = async () => {
-  ++generation;
-  loadAbort.abort();
-  resetMedia();
-  const button = $<HTMLButtonElement>("clear-cache");
-  button.disabled = true;
-  try {
-    await invoke("clear_cache");
-    $("cache-size").textContent = "0 MB used";
-    status("Playback cache cleared");
-    overlay(
-      "Playback cache cleared",
-      "Select a recording to prepare its camera tracks again.",
-    );
-  } catch (e) {
-    status(String(e), true);
-  } finally {
-    button.disabled = false;
-  }
-};
 document.addEventListener("keydown", (e) => {
   if (
     preferences.open ||

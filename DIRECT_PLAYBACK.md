@@ -1,6 +1,6 @@
 # On-demand camera playback
 
-Branch: `chore/on-demand-tracks`.
+Branch: `chore/on-demand-tracks`. Direct playback is the only playback implementation.
 
 ## Behavior
 
@@ -20,18 +20,20 @@ This version retains the interleaved `mdat` layout, so a requested range may inc
 
 ## Compatibility boundary
 
-Direct playback currently accepts one nonfragmented `mdat`, exactly two `avc1` camera tracks, optional one `mp4a` audio track, local data references, and unedited track timelines. Index allocation is bounded to 16 MiB per header and box traversal is bounded. Malformed offsets, edited tracks, fragmented recordings, unsupported codecs, and other unsupported layouts use the existing FFmpeg compatibility path. A native-player error during initial direct loading also retries through that path. Errors after playback starts remain visible to the user.
+Direct playback currently accepts one nonfragmented `mdat`, exactly two `avc1` camera tracks, optional one `mp4a` audio track, local data references, and unedited track timelines. Index allocation is bounded to 16 MiB per header and box traversal is bounded. Malformed offsets, edited tracks, fragmented recordings, unsupported codecs, and other unsupported layouts return explicit errors. Native player errors are shown directly; no conversion fallback exists.
 
-The tested COMTEC files need neither FFmpeg nor FFprobe for opening or direct playback. Bundled helpers remain available for compatibility. Existing playback-cache files are retained until the user clears that cache in Settings.
+FFmpeg, FFprobe, the remux fallback, helper build scripts, and playback-cache commands/UI have been removed. Old installed apps and their existing caches are not modified by this source cleanup. Standard MP4 box parsing and serialization use `mp4-atom`; source-range mapping remains application code.
 
 ## Validation
 
 - Five new Rust tests cover byte ranges, malformed box sizes, 32/64-bit offset rewriting, reads across the virtual-header boundary, and real recording indexes/sample bytes.
 - Garage, night, and short recording indexes opened in approximately 1–3 ms in one local run. Indexes occupied approximately 132 KiB, 132 KiB, and 11 KiB per camera. These are observations on this Mac with warm filesystem caches.
-- The packaged WKWebView smoke suite passed 39 checks. All three recordings explicitly reported direct delivery, with observed open times of 455–463 ms including a deliberate 250 ms test settling wait. Playback, pause, seek, 2× speed, ending/replay, selection races, maps, and camera modes passed.
+- The packaged WKWebView smoke suite passed 39 checks. All three recordings explicitly reported direct delivery, The post-crate run opened the three fixtures in 639 ms, 667 ms, and 1,495 ms respectively, including a deliberate 250 ms settling wait. Playback, pause, seek, 2× speed, ending/replay, selection races, maps, and camera modes passed.
 - No original recordings are edited, exported, or bundled. The original source checksum checks remain part of acceptance.
 
 ## References
 
 - [Tauri asynchronous custom protocols](https://docs.rs/tauri/latest/x86_64-apple-darwin/tauri/struct.Builder.html#method.register_asynchronous_uri_scheme_protocol)
 - Tauri's installed `protocol/asset.rs` implementation informed bounded byte-range responses.
+
+- [mp4-atom crate](https://docs.rs/mp4-atom/latest/mp4_atom/): low-level MP4 decoding and encoding. It does not provide a ready-made virtual-file playback protocol.

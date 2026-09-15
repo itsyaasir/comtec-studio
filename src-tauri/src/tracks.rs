@@ -1,5 +1,6 @@
 //! Virtual progressive MP4s: rewrite only the movie index, read mdat from the original.
-use std::{fs::File, os::unix::fs::FileExt, path::Path, sync::Arc};
+use mp4_atom::{Decode, Encode};
+use std::{fs::File, io::Cursor, os::unix::fs::FileExt, path::Path, sync::Arc};
 type Result<T> = std::result::Result<T, String>;
 const MAX_INDEX: u64 = 16 * 1024 * 1024;
 pub const MAX_RANGE: u64 = 2 * 1024 * 1024;
@@ -29,6 +30,7 @@ fn u32_at(b: &[u8], p: usize) -> Result<u32> {
             .unwrap(),
     ))
 }
+#[cfg(test)]
 fn u64_at(b: &[u8], p: usize) -> Result<u64> {
     Ok(u64::from_be_bytes(
         b.get(p..p + 8)
@@ -44,25 +46,24 @@ fn atoms(b: &[u8], start: usize, end: usize) -> Result<Vec<Atom>> {
         if out.len() >= 4096 || end > b.len() || end - p < 8 {
             return Err("Invalid MP4 box list".into());
         }
-        let mut n = u32_at(b, p)? as u64;
-        let mut header = 8;
-        if n == 1 {
-            n = u64_at(b, p + 8)?;
-            header = 16;
-        }
-        if n == 0 {
-            n = (end - p) as u64;
-        }
-        if n < header as u64 || n > (end - p) as u64 {
+        let mut cursor = Cursor::new(&b[p..end]);
+        let decoded = mp4_atom::Header::decode(&mut cursor).map_err(|e| e.to_string())?;
+        let header = cursor.position() as usize;
+        let n = decoded
+            .size
+            .unwrap_or(end - p - header)
+            .checked_add(header)
+            .ok_or("MP4 box overflow")?;
+        if n > end - p {
             return Err("Invalid MP4 box size".into());
         }
         out.push(Atom {
             start: p,
-            end: p + n as usize,
+            end: p + n,
             body: p + header,
             kind: b[p + 4..p + 8].try_into().unwrap(),
         });
-        p += n as usize;
+        p += n;
     }
     Ok(out)
 }
@@ -75,6 +76,10 @@ fn child(b: &[u8], a: Atom, kind: &[u8; 4]) -> Result<Atom> {
         return Err("Missing or duplicate MP4 index box".into());
     }
     Ok(found[0])
+}
+fn decode<T: Decode>(b: &[u8], atom: Atom) -> Result<T> {
+    T::decode(&mut Cursor::new(&b[atom.start..atom.end]))
+        .map_err(|e| format!("Invalid MP4 index: {e}"))
 }
 fn read(file: &File, p: u64, n: usize) -> Result<Vec<u8>> {
     let mut b = vec![0; n];
@@ -94,17 +99,17 @@ impl Tracks {
             if count > 4096 || size - p < 8 {
                 return Err("Invalid MP4 structure".into());
             }
-            let h = read(&file, p, 8)?;
+            let h = read(&file, p, (size - p).min(16) as usize)?;
             let kind = &h[4..8];
-            let mut n = u32_at(&h, 0)? as u64;
-            let mut hs = 8;
-            if n == 1 {
-                n = u64_at(&read(&file, p + 8, 8)?, 0)?;
-                hs = 16;
-            }
-            if n == 0 {
-                n = size - p;
-            }
+            let mut cursor = Cursor::new(&h);
+            let decoded = mp4_atom::Header::decode(&mut cursor).map_err(|e| e.to_string())?;
+            let hs = cursor.position();
+            let n = decoded
+                .size
+                .map(|n| n as u64)
+                .unwrap_or(size - p - hs)
+                .checked_add(hs)
+                .ok_or("MP4 box overflow")?;
             if n < hs || n > size - p {
                 return Err("Truncated MP4 recording".into());
             }
@@ -125,12 +130,10 @@ impl Tracks {
                 }
                 b"mdat" => {
                     if mdat.replace((p, n, hs)).is_some() {
-                        return Err(
-                            "Multiple media data boxes require compatibility playback".into()
-                        );
+                        return Err("Multiple media data boxes are not supported".into());
                     }
                 }
-                b"moof" => return Err("Fragmented MP4 requires compatibility playback".into()),
+                b"moof" => return Err("Fragmented MP4 is not supported".into()),
                 _ => {}
             }
             p += n;
@@ -144,13 +147,8 @@ impl Tracks {
             return Err("Fragmented MP4 index".into());
         }
         let mvhd = child(&moov, root, b"mvhd")?;
-        // Preserve the native movie timeline. Complex edits take the existing compatibility path.
-        let movie_version = moov[mvhd.body];
-        let ts = match movie_version {
-            0 => u32_at(&moov, mvhd.body + 12)?,
-            1 => u32_at(&moov, mvhd.body + 20)?,
-            _ => return Err("Unsupported movie version".into()),
-        };
+        // Preserve the native movie timeline. Edited timelines are rejected explicitly.
+        let ts = decode::<mp4_atom::Mvhd>(&moov, mvhd)?.timescale;
         if ts == 0 {
             return Err("Invalid movie timescale".into());
         }
@@ -161,7 +159,7 @@ impl Tracks {
                 .iter()
                 .any(|a| matches!(&a.kind, b"edts" | b"tref"))
             {
-                return Err("Edited tracks require compatibility playback".into());
+                return Err("Edited tracks are not supported".into());
             }
             let mdia = child(&moov, *a, b"mdia")?;
             let handler = child(&moov, mdia, b"hdlr")?;
@@ -191,11 +189,7 @@ impl Tracks {
             }
             if kind == b"vide" && codec == *b"avc1" {
                 let tkhd = child(&moov, *a, b"tkhd")?;
-                let duration = match moov[tkhd.body] {
-                    0 => u32_at(&moov, tkhd.body + 20)? as u64,
-                    1 => u64_at(&moov, tkhd.body + 28)?,
-                    _ => return Err("Unsupported track version".into()),
-                };
+                let duration = decode::<mp4_atom::Tkhd>(&moov, tkhd)?.duration;
                 if duration == 0 {
                     return Err("Invalid track duration".into());
                 }
@@ -271,28 +265,35 @@ fn patch_offsets_at_depth(
                 if count == 0 || a.body + 8 + count * width != a.end {
                     return Err("Invalid chunk offset table".into());
                 }
-                for p in (a.body + 8..a.end).step_by(width) {
-                    let old = if width == 4 {
-                        u32_at(b, p)? as u64
-                    } else {
-                        u64_at(b, p)?
-                    };
+                let relocate = |old: u64| -> Result<u64> {
                     if old < mdat + hs || old >= mdat + len {
                         return Err("Camera chunk lies outside media data".into());
                     }
-                    let value = old - mdat + new_mdat;
-                    if width == 4 {
-                        b[p..p + 4].copy_from_slice(
-                            &u32::try_from(value)
-                                .map_err(|_| "Chunk offset overflow")?
-                                .to_be_bytes(),
-                        );
-                    } else {
-                        b[p..p + 8].copy_from_slice(&value.to_be_bytes());
+                    Ok(old - mdat + new_mdat)
+                };
+                let mut encoded = Vec::new();
+                if width == 4 {
+                    let mut table = decode::<mp4_atom::Stco>(b, a)?;
+                    for offset in &mut table.entries {
+                        *offset = u32::try_from(relocate(*offset as u64)?)
+                            .map_err(|_| "Chunk offset overflow")?;
                     }
+                    table.encode(&mut encoded).map_err(|e| e.to_string())?;
+                } else {
+                    let mut table = decode::<mp4_atom::Co64>(b, a)?;
+                    for offset in &mut table.entries {
+                        *offset = relocate(*offset)?;
+                    }
+                    table.encode(&mut encoded).map_err(|e| e.to_string())?;
                 }
+                // The virtual layout preserves the original index length.
+                if encoded.len() != a.end - a.start {
+                    return Err("Unsupported chunk table header size".into());
+                }
+                b[a.start..a.end].copy_from_slice(&encoded);
             }
-            b"saio" => return Err("Auxiliary offsets require compatibility playback".into()),
+
+            b"saio" => return Err("Auxiliary offsets are not supported".into()),
             _ => {}
         }
     }

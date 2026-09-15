@@ -4,9 +4,9 @@ A standalone Apple Silicon macOS application for reviewing original two-camera C
 
 ## Open the app
 
-The finished app is installed at `~/Applications/COMTEC Studio.app`. Double-click it to launch. A build copy is also available in `src-tauri/target/release/bundle/macos`. It can be copied to Applications. It has a distinct name and bundle identifier and does not replace COMTEC Viewer.
+The current branch build is `src-tauri/target/release/bundle/macos/COMTEC Studio.app`. Double-click it to launch. The separately installed `~/Applications/COMTEC Studio.app` remains the earlier release. The original COMTEC Viewer is also preserved.
 
-The app contains its frontend and media helpers. Playback needs no Terminal, Python, Homebrew, separate browser, network connection, or localhost server. The embedded OpenStreetMap street layer uses an internet connection; recorded GPS routes and sensor data remain local. Map tile requests disclose the viewed area and your IP address to OpenStreetMap. The current build is locally ad-hoc signed for Apple Silicon. It is not Developer ID signed or notarized for public distribution. macOS 12+ is the build target; live verification was performed on this Mac only.
+The app contains its frontend and Rust media reader. Playback needs no Terminal, Python, Homebrew, separate browser, network connection, or localhost server. The embedded OpenStreetMap street layer uses an internet connection; recorded GPS routes and sensor data remain local. Map tile requests disclose the viewed area and your IP address to OpenStreetMap. The current build is locally ad-hoc signed for Apple Silicon. It is not Developer ID signed or notarized for public distribution. macOS 12+ is the build target; live verification was performed on this Mac only.
 
 Choose **Open recordings folder**, then select a clip. The default first-run location is the user's Documents/Dashcam folder. The app remembers the selected folder. Hidden files, symlinks, and Preview directories are excluded.
 
@@ -19,9 +19,9 @@ Choose **Open recordings folder**, then select a clip. The default first-run loc
 - Switch between raw acceleration (including gravity) and sample-to-sample changes (Δg). Axis colors follow the original viewer: green forward/backward, red left/right, purple up/down.
 - Space plays or pauses; left/right arrows seek five seconds. Focused camera arrow keys pan instead.
 - F toggles native fullscreen, retaining the transport controls.
-- Settings includes playback-cache size, cache clearing, and keyboard shortcuts.
+- Settings includes playback information and keyboard shortcuts.
 
-Original footage is opened read-only. Supported recordings play directly through an in-memory camera index, with no prepared video copies. Keep the original drive connected while playing. Unsupported layouts fall back to lossless camera files in `~/Library/Caches/app.comtec.studio/media`. Clearing this cache never targets the recordings folder or the previous viewer's cache. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
+Original footage is opened read-only. Supported recordings play directly through an in-memory camera index, with no prepared video copies. Keep the original drive connected while playing. Unsupported layouts show an error; there is no conversion fallback. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
 
 ## Build
 
@@ -29,11 +29,10 @@ Requires an Apple Silicon Mac, Xcode command-line tools, Rust, Bun, and an inter
 
 ```sh
 bun install --frozen-lockfile
-./scripts/build-media.sh
 bun run desktop:build
 ```
 
-The helper script downloads the checksum-pinned official FFmpeg 8.0.1 source, builds minimal static FFmpeg/FFprobe executables with no network support, checks their dynamic dependencies, and includes the matching source, license, and build instructions in the application bundle. The helpers link only to macOS system libraries. They are invoked by Rust using bundle-relative paths; the frontend has no shell-execution permission.
+The package uses Rust and system macOS libraries, with no FFmpeg or FFprobe executables. `mp4-atom` handles standard MP4 box decoding and encoding.
 
 The debug development loop is `bun run tauri dev`. Its Vite development server is a build-time convenience and is not part of the packaged application.
 
@@ -48,10 +47,10 @@ The debug development loop is `bun run tauri dev`. Its Vite development server i
 - `src-tauri/src/telemetry.rs`: bounded, read-only COMTEC CSODAT trailer parser.
 - `src-tauri/src/map.rs`: fixed-host OSM tile requests and seven-day on-demand cache.
 - `src-tauri/src/lib.rs`: command boundary, native folder picker, app paths, lifecycle.
-- `src-tauri/src/media.rs`: discovery, immutable source identities, probing, remuxing, cancellation, cache validation.
+- `src-tauri/src/media.rs`: discovery, immutable source identities, and operation cancellation.
 - `src-tauri/src/tracks.rs`: virtual MP4 indexes, original-file range reads, and direct-playback validation.
 
-Rust only accepts IDs from its discovered library. The in-process `track:` protocol exposes the active recording's camera views and checks original-file identity on each request. Compatibility preparation uses a serialized worker and cancellable child processes. Its outputs retain a common timestamp origin and the playable overlapping interval. Staged media becomes ready only after both outputs have been probed and the recording identity is rechecked. Tauri's asset protocol is scoped to this app's caches. The webview cannot read arbitrary paths or run arbitrary commands. Production CSP prevents remote scripts and frontend network API calls. Rust fetches only validated tile coordinates from the fixed OpenStreetMap tile host. No recording is uploaded. See [DIRECT_PLAYBACK.md](DIRECT_PLAYBACK.md) for the format boundary and validation.
+Rust only accepts IDs from its discovered library. The in-process `track:` protocol exposes the active recording's camera views and checks original-file identity on each request. Tauri's asset protocol is scoped only to cached map tiles. The webview cannot read arbitrary paths or run arbitrary commands. Production CSP prevents remote scripts and frontend network API calls. Rust fetches only validated tile coordinates from the fixed OpenStreetMap tile host. No recording is uploaded. See [DIRECT_PLAYBACK.md](DIRECT_PLAYBACK.md) for the format boundary and validation.
 
 The original Python/browser source is archived in [`legacy/browser-viewer/`](legacy/browser-viewer/), with the historical handoff and reference screenshots under [`legacy/`](legacy/README.md). These files are not used by the Tauri build. The original installed viewer remains untouched.
 
@@ -66,7 +65,7 @@ COMTEC_TEST_ROOT="$HOME/Documents/Dashcam" cargo test --manifest-path src-tauri/
 
 Use `bun run test` rather than Bun's built-in `bun test` to run the Rust test script.
 
-Real-fixture tests prepare garage, night, and short recordings using the bundled helpers and a disposable temporary cache. They check cache reuse and unchanged source identities. Unit tests cover stream timing, invalid duration/codecs, excluded files, identity invalidation, and child-process cancellation.
+Real-fixture tests verify camera indexes, original sample bytes, and telemetry. Unit tests cover malformed indexes, byte ranges, folder discovery, and unchanged source identities.
 
 For the native WKWebView smoke suite:
 
@@ -81,6 +80,4 @@ Native checks cover the 26-recording library, dimensions, paused load, synchroni
 
 ## Media notes
 
-This is an independent viewer, not an official COMTEC product. The 240° lens model and default view angles are empirical; correction is approximate. Export is outside this version. Supported originals contain two H.264 video streams and optional AAC audio. Preparation preserves encoded video and audio rather than reencoding. Preallocated source file size does not indicate clip duration.
-
-FFmpeg licensing information: https://ffmpeg.org/legal.html. The bundled helpers use LGPL 2.1-or-later components; GPL and nonfree components are disabled. The exact source archive and license are available under `Contents/Resources/resources/media` in the app.
+This is an independent viewer, not an official COMTEC product. The 240° lens model and default view angles are empirical; correction is approximate. Export is outside this version. Supported originals contain two H.264 video streams and optional AAC audio. Playback preserves the original encoded video and audio. Preallocated source file size does not indicate clip duration.

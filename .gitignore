@@ -12,10 +12,6 @@ src-tauri/gen/
 *.MP4
 *.mov
 *.MOV
-# Bundled helpers are rebuilt from official source by scripts/build-media.sh.
-src-tauri/resources/media/ffmpeg
-src-tauri/resources/media/ffprobe
-src-tauri/resources/media/*.tar.xz
 # User-provided reference images and local validation artifacts.
 Screenshot*.png
 artifacts/

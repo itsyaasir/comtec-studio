@@ -1,6 +1,16 @@
 # Validation — 15 September 2026
 
-## Delivered build
+## Current branch: direct playback with mp4-atom
+
+The remux fallback, FFmpeg/FFprobe executables, helper-build scripts, and playback-cache controls are removed. `mp4-atom` 0.15 handles standard headers, timing fields, and chunk-offset decoding/encoding. The virtual-file mapping retains original sample bytes.
+
+- 12 Rust tests passed, including actual recording indexes and telemetry.
+- 39 packaged native checks passed with direct camera URLs for garage, night, and short recordings.
+- Release build and code-signature validation passed; the release contains no media helper executables.
+- Original fixture SHA-256 checksums remain unchanged.
+- Earlier verification below describes historical builds and their former dependencies.
+
+## Original delivered build
 
 - Product: COMTEC Studio 0.1.0, Apple Silicon arm64.
 - Tauri 2.11.5 / WKWebView, bundled frontend and minimal FFmpeg 8.0.1 helpers.

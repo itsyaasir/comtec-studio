@@ -42,7 +42,8 @@
       await choose(name);
       check(
         name + " reads directly without preparation",
-        source().dataset.delivery === "direct",
+        source().currentSrc.startsWith("track://") &&
+          rear().currentSrc.startsWith("track://"),
         { openMs: Math.round(performance.now() - openedAt) },
       );
       check(name + " loads paused", source().paused && rear().paused, {

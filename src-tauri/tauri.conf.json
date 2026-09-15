@@ -24,17 +24,16 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost; media-src 'self' track: asset: http://asset.localhost; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'",
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost; media-src 'self' track:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'",
       "assetProtocol": {
         "enable": true,
-        "scope": ["$APPCACHE/media/**", "$APPCACHE/map-tiles/**"]
+        "scope": ["$APPCACHE/map-tiles/**"]
       }
     }
   },
   "bundle": {
     "active": true,
     "targets": ["app"],
-    "resources": ["resources/media/*"],
     "macOS": {
       "minimumSystemVersion": "12.0"
     }

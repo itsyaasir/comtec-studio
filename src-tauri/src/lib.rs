@@ -2,7 +2,15 @@ mod map;
 mod media;
 mod telemetry;
 mod tracks;
-use media::{Library, Media, Prepared};
+use media::{Library, Media};
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Playback {
+    duration: f64,
+    start: f64,
+    main_path: String,
+    rear_path: String,
+}
 use std::{
     path::PathBuf,
     sync::{atomic::AtomicU64, Arc, Mutex},
@@ -16,11 +24,11 @@ async fn open_recording(
     app: tauri::AppHandle,
     state: State<'_, Arc<Media>>,
     id: String,
-) -> Result<Prepared, String> {
+) -> Result<Playback, String> {
     let media = state.inner().clone();
     let ticket = media.cancel();
     tauri::async_runtime::spawn_blocking(move || {
-        let worker = media.worker.lock().unwrap();
+        let _worker = media.worker.lock().unwrap();
         let clip = media
             .clips
             .lock()
@@ -29,27 +37,19 @@ async fn open_recording(
             .cloned()
             .ok_or("Recording unavailable")?;
         media.unchanged(&clip)?;
-        let direct = tracks::Tracks::open(&clip.path);
+        let tracks = tracks::Tracks::open(&clip.path)?;
         media.unchanged(&clip)?;
         if media.generation.load(std::sync::atomic::Ordering::SeqCst) != ticket {
             return Err("Opening cancelled".into());
         }
-        if let Ok(tracks) = direct {
-            let prepared = Prepared {
-                direct: true,
-                duration: tracks.duration,
-                start: 0.0,
-                main_path: format!("track://localhost/{id}/main.mp4"),
-                rear_path: format!("track://localhost/{id}/rear.mp4"),
-                sizes: [tracks.cameras[0].size, tracks.cameras[1].size],
-                version: 2,
-            };
-            *app.state::<DirectPlayback>().0.lock().unwrap() = Some((id, tracks));
-            Ok(prepared)
-        } else {
-            drop(worker);
-            media.prepare(&id, ticket)
-        }
+        let playback = Playback {
+            duration: tracks.duration,
+            start: 0.0,
+            main_path: format!("track://localhost/{id}/main.mp4"),
+            rear_path: format!("track://localhost/{id}/rear.mp4"),
+        };
+        *app.state::<DirectPlayback>().0.lock().unwrap() = Some((id, tracks));
+        Ok(playback)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -161,14 +161,6 @@ async fn library(
     Ok(Some(result))
 }
 #[tauri::command]
-async fn prepare(state: State<'_, Arc<Media>>, id: String) -> Result<Prepared, String> {
-    let media = state.inner().clone();
-    let ticket = media.cancel();
-    tauri::async_runtime::spawn_blocking(move || media.prepare(&id, ticket))
-        .await
-        .map_err(|e| e.to_string())?
-}
-#[tauri::command]
 async fn telemetry(
     state: State<'_, Arc<Media>>,
     id: String,
@@ -191,29 +183,6 @@ async fn telemetry(
 #[tauri::command]
 fn cancel(state: State<'_, Arc<Media>>) {
     state.cancel();
-}
-#[tauri::command]
-async fn clear_cache(state: State<'_, Arc<Media>>) -> Result<(), String> {
-    let media = state.inner().clone();
-    media.cancel();
-    tauri::async_runtime::spawn_blocking(move || media.clear())
-        .await
-        .map_err(|e| e.to_string())?
-}
-#[tauri::command]
-async fn cache_size(state: State<'_, Arc<Media>>) -> Result<u64, String> {
-    let path = state.cache.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        walkdir::WalkDir::new(path)
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().is_file())
-            .filter_map(|e| e.metadata().ok())
-            .map(|m| m.len())
-            .sum()
-    })
-    .await
-    .map_err(|e| e.to_string())
 }
 #[cfg(debug_assertions)]
 #[tauri::command]
@@ -256,10 +225,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             library,
             open_recording,
-            prepare,
             cancel,
-            clear_cache,
-            cache_size,
             telemetry,
             map::map_tile,
             test_report
@@ -268,10 +234,7 @@ pub fn run() {
     let builder = builder.invoke_handler(tauri::generate_handler![
         library,
         open_recording,
-        prepare,
         cancel,
-        clear_cache,
-        cache_size,
         telemetry,
         map::map_tile
     ]);
@@ -301,17 +264,13 @@ pub fn run() {
             } else {
                 root
             };
-            let cache = app.path().app_cache_dir()?.join("media");
-            std::fs::create_dir_all(&cache)?;
+
             app.manage(Arc::new(Media {
-                cache,
-                helpers: app.path().resource_dir()?.join("resources/media"),
                 config,
                 root: Mutex::new(root),
                 clips: Mutex::new(Default::default()),
                 generation: AtomicU64::new(0),
                 worker: Mutex::new(()),
-                child: Mutex::new(None),
             }));
             Ok(())
         })

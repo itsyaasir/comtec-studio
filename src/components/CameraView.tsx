@@ -124,7 +124,7 @@ export const CameraView = memo(function CameraView({
               type="range"
               min="35"
               max="130"
-              className="w-75"
+              className="w-75 accent-primary"
               value={fov}
               onInput={(e) => {
                 if (lens.current) {

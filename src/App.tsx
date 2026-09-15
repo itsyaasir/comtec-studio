@@ -205,16 +205,16 @@ export default function App() {
                     setExpanded(null);
                     setLayout(v as Layout);
                   }}
-                  spacing={0.5}
+                  spacing={2}
                   aria-label="Camera layout"
-                  className="max-[1180px]:order-3 rounded-[7px] border border-border bg-secondary p-[3px]"
+                  className="max-[1180px]:order-3 rounded-[7px] border border-border bg-secondary p-3"
                 >
                   {layouts.map((view) => (
                     <ToggleGroupItem
                       key={view.value}
                       value={view.value}
                       data-layout={view.value}
-                      className="h-auto min-w-0 rounded-[4px] px-[7px] py-[4px] text-[11px] font-normal text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-[0_1px_3px_rgb(0_0_0/0.13)]"
+                      className="h-auto min-w-0 rounded-[4px] px-7 py-4 text-[11px] font-normal text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-[0_1px_3px_rgb(0_0_0/0.13)]"
                     >
                       {view.label}
                     </ToggleGroupItem>

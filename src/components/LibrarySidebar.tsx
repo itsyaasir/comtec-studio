@@ -74,7 +74,7 @@ export const LibrarySidebar = memo(function LibrarySidebar({
           if (v) l.setFilter(v);
         }}
         aria-label="Recording type"
-        className="mx-[16px] mb-[12px] grid w-auto grid-cols-4 gap-[3px]"
+        className="mx-16 mb-12 grid w-auto grid-cols-4 gap-3"
       >
         {(
           [
@@ -88,7 +88,7 @@ export const LibrarySidebar = memo(function LibrarySidebar({
             key={value}
             value={value}
             data-filter={value}
-            className="h-auto min-w-0 rounded-[5px] px-[1px] py-[4px] text-[11px] font-normal text-muted-foreground data-[state=on]:bg-[var(--selection)] data-[state=on]:font-semibold data-[state=on]:text-[var(--selection-text)]"
+            className="h-auto min-w-0 rounded-[5px] px-1 py-4 text-[11px] font-normal text-muted-foreground data-[state=on]:bg-[var(--selection)] data-[state=on]:font-semibold data-[state=on]:text-[var(--selection-text)]"
           >
             {label}
           </ToggleGroupItem>

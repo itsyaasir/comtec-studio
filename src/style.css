@@ -5,6 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /*
+   * One spacing unit is one pixel, so `p-16` is 16px. The default 0.25rem
+   * unit is relative to the 13px root font-size below, which made every
+   * utility render at 0.8125x its nominal value (`p-4` was 13px, not 16px).
+   * Pixel-denominated spacing keeps the scale readable against the compact
+   * desktop measurements this UI is built from.
+   */
+  --spacing: 1px;
   --font-heading: var(--font-sans);
   --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);

@@ -274,7 +274,7 @@
         camera + " click expands camera",
         $("stage").dataset.layout === camera &&
           document
-            .querySelector(".desktop-shell")
+            .querySelector('[data-testid="desktop-shell"]')
             .classList.contains("camera-focused"),
       );
       check(
@@ -300,7 +300,7 @@
       check(
         camera + " Escape restores layout",
         !document
-          .querySelector(".desktop-shell")
+          .querySelector('[data-testid="desktop-shell"]')
           .classList.contains("camera-focused"),
       );
     }

@@ -36,6 +36,9 @@ import { usePlayback } from "@/hooks/use-playback";
 import { folderLabel, recordingKind } from "@/library-model";
 import type { Layout, StageLayout } from "@/lib/types";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { CameraPanel } from "@/components/CameraPanel";
+import { STAGE_LAYOUTS } from "@/lib/stage-layouts";
+import { cn } from "@/lib/utils";
 const layouts: { value: Layout; label: string }[] = [
   { value: "all", label: "All views" },
   { value: "split", label: "Split" },
@@ -93,6 +96,7 @@ export default function App() {
     [],
   );
   const cameraLayout: StageLayout = expanded ?? layout;
+  const arrangement = STAGE_LAYOUTS[cameraLayout];
   const fullscreen = useCallback(() => {
     const window = getCurrentWindow();
     void window.isFullscreen().then((value) => window.setFullscreen(!value));
@@ -145,7 +149,10 @@ export default function App() {
   return (
     <TooltipProvider>
       <Dialog open={settings} onOpenChange={setSettings}>
-        <div className={`desktop-shell ${expanded ? "camera-focused" : ""}`}>
+        <div
+          data-testid="desktop-shell"
+          className={`desktop-shell ${expanded ? "camera-focused" : ""}`}
+        >
           <header className="titlebar" data-tauri-drag-region="deep">
             <div className="titlebar-left">
               <Button
@@ -235,13 +242,24 @@ export default function App() {
                   {player.error}
                 </p>
               )}
-              <div className="stage" id="stage" data-layout={cameraLayout}>
+              <div
+                id="stage"
+                data-layout={cameraLayout}
+                data-testid="stage"
+                className={cn(
+                  "relative mx-16 grid min-h-150 flex-1 gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-700",
+                  arrangement.grid,
+                  expanded && "mt-14",
+                )}
+              >
                 <CameraView
                   camera="front"
                   source={sourceRef}
                   layout={cameraLayout}
                   expanded={expanded === "front"}
                   onExpand={expandCamera}
+                  hidden={arrangement.hide.includes("front")}
+                  className={arrangement.front}
                 />
                 <CameraView
                   camera="cabin"
@@ -249,58 +267,66 @@ export default function App() {
                   layout={cameraLayout}
                   expanded={expanded === "cabin"}
                   onExpand={expandCamera}
+                  hidden={arrangement.hide.includes("cabin")}
                 />
-                <article className="camera rear">
-                  <header>
-                    <span>Rear camera</span>
-                  </header>
-                  <div className="camera-image">
-                    <video
-                      id="rear"
-                      ref={rearRef}
-                      playsInline
-                      muted
-                      crossOrigin="anonymous"
-                      preload="auto"
-                      tabIndex={0}
-                      role="button"
-                      aria-label={
-                        expanded === "rear"
-                          ? "Restore camera layout"
-                          : "Expand rear camera"
-                      }
-                      onClick={() => expandCamera("rear")}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") expandCamera("rear");
-                      }}
-                    />
-                  </div>
-                </article>
+                <CameraPanel
+                  title="Rear camera"
+                  hidden={arrangement.hide.includes("rear")}
+                >
+                  <video
+                    id="rear"
+                    ref={rearRef}
+                    playsInline
+                    muted
+                    crossOrigin="anonymous"
+                    preload="auto"
+                    tabIndex={0}
+                    role="button"
+                    className={cn(
+                      "absolute inset-0 block h-full w-full object-contain",
+                      expanded === "rear"
+                        ? "cursor-zoom-out"
+                        : "cursor-zoom-in",
+                    )}
+                    aria-label={
+                      expanded === "rear"
+                        ? "Restore camera layout"
+                        : "Expand rear camera"
+                    }
+                    onClick={() => expandCamera("rear")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") expandCamera("rear");
+                    }}
+                  />
+                </CameraPanel>
                 <div
-                  className="empty-state"
                   id="empty"
                   hidden={ready && !player.loading}
+                  className="absolute inset-0 z-2 flex flex-col items-center justify-center bg-radial-[ellipse_at_50%_20%] from-zinc-900 to-zinc-950 to-70% p-20 text-center text-zinc-100"
                 >
-                  <div className="empty-symbol">
+                  <div className="mb-15 rounded-[15px] border border-white/10 bg-white/5 p-15 text-zinc-400 max-[1180px]:hidden">
                     {player.loading ? (
-                      <LoaderCircle className="loading-spin" size={26} />
+                      <LoaderCircle className="animate-spin" size={26} />
                     ) : (
                       <Film size={28} />
                     )}
                   </div>
-                  <h3>
+                  <h3 className="text-[20px] font-[550] tracking-[-0.025em] max-[1180px]:text-[17px]">
                     {player.loading
                       ? "Opening recording…"
                       : player.error
                         ? "Unable to open recording"
                         : "Select a recording"}
                   </h3>
-                  <p>
+                  <p className="mt-8 mb-18 max-w-340 text-xs leading-[1.6] text-zinc-400 max-[1180px]:mt-5 max-[1180px]:mb-10">
                     {player.error ||
                       "Choose a session and recording from your library."}
                   </p>
                   {!player.loading && !player.selected && (
-                    <Button onClick={library.open}>
+                    <Button
+                      onClick={library.open}
+                      className="bg-zinc-100 text-zinc-800 hover:bg-white"
+                    >
                       <FolderOpen size={15} />
                       Open recordings folder
                     </Button>

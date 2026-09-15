@@ -765,7 +765,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   includes `aria-[current=true]:bg-secondary`); `data-testid` passes through
   like any other button prop.
 
-- [ ] **Step 1: Read the scattered blocks**
+- [x] **Step 1: Read the scattered blocks**
 
 ```bash
 grep -n '\.folder\|\.clip\|\.search-field\|\.library-\|\.sidebar-heading\|\.column-heading\|\.open-folder' src/style.css
@@ -773,7 +773,7 @@ grep -n '\.folder\|\.clip\|\.search-field\|\.library-\|\.sidebar-heading\|\.colu
 
 `.folder` @ 336 **and** 380; `.clip` @ 368 **and** 379; `.search-field` @ 260 **and** 278; `.library-error` @ 449 **and** 454.
 
-- [ ] **Step 2: Create SidebarRow**
+- [x] **Step 2: Create SidebarRow**
 
 The two rows share `display:flex; align-items:center; gap:7px; width:100%; text-align:left; border-radius:6px` and differ only in padding (`10px 5px` vs `11px 7px`) and margin-bottom (`3px` vs `2px`) — drift, not intent. The variant unifies them:
 
@@ -802,25 +802,25 @@ export function SidebarRow({
 }
 ```
 
-- [ ] **Step 3: Use it for both rows and add the test hooks**
+- [x] **Step 3: Use it for both rows and add the test hooks**
 
 In `LibrarySidebar.tsx`, replace `<button className="folder" …>` with `<SidebarRow variant="folder" data-testid="folder" …>` and `<button className="clip" …>` with `<SidebarRow variant="clip" data-testid="clip" …>`. Keep `data-folder`, `data-id`, `aria-current` and `title` exactly as they are.
 
-- [ ] **Step 4: Convert the rest of the sidebar**
+- [x] **Step 4: Convert the rest of the sidebar**
 
 `.library-sidebar` → `flex min-h-0 flex-col gap-2 border-r border-border bg-[var(--chrome)] p-2.5`; `.search-field` → `relative flex items-center gap-1.5 rounded-md border border-border bg-background px-2`; `.library-columns` → `grid min-h-0 flex-1 grid-cols-[126px_minmax(0,1fr)] gap-2 max-[1180px]:grid-cols-[112px_minmax(0,1fr)]`; `.column-heading` → `px-1 pb-1 text-[9px] font-semibold tracking-[0.06em] text-muted-foreground`.
 
 `.folder > svg` used `#868d97` — one of the six Group B leaks. Replace with `text-muted-foreground`, **not** a zinc value; this is app chrome and must flip with the theme.
 
-- [ ] **Step 5: Update the smoke test**
+- [x] **Step 5: Update the smoke test**
 
 Change `document.querySelectorAll(".clip")` → `'[data-testid="clip"]'` and `document.querySelectorAll(".folder")` → `'[data-testid="folder"]'` at `native-smoke.js:23,31,179,182,222`.
 
-- [ ] **Step 6: Delete the converted CSS**
+- [x] **Step 6: Delete the converted CSS**
 
 Remove lines 226-284 and 302-456.
 
-- [ ] **Step 7: Verify**
+- [x] **Step 7: Verify**
 
 ```bash
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
@@ -828,7 +828,7 @@ npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
 
 Then run `tests/native-smoke.js` — it asserts `folder sessions grouped` finds exactly 4 folders and selects clips by name.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/ tests/native-smoke.js
@@ -842,6 +842,22 @@ changes cannot silently break the suite.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
+
+**Execution notes (Task 6):**
+
+- Rescaled the plan's pre-`--spacing: 1px` examples so the rendered padding
+  and gaps remain pixel-correct. `SidebarRow` also uses an explicit 6px radius
+  because Tailwind's named radius scale remains rem-based.
+- Replaced the search field's hardcoded blue focus outline with the existing
+  ring token. Focused-camera hiding now lives beside the sidebar utilities via
+  an ancestor variant, so the removed `.library-sidebar` rule has no dangling
+  styling hook.
+- Typecheck, lint, all 8 logic tests, production and native debug builds, and
+  `git diff --check` passed. The final native WKWebView smoke run passed all 79
+  assertions, including four-folder grouping and clip selection. Two earlier
+  runs stopped on timing-sensitive media synchronization before reaching the
+  sidebar assertions; neither failure touched code changed by this task.
+- Spec and code-quality reviews passed after the spacing-scale corrections.
 
 ---
 

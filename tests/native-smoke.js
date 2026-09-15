@@ -20,7 +20,7 @@
     $("search").value = name;
     $("search").dispatchEvent(new Event("input", { bubbles: true }));
     await wait(100);
-    const buttons = [...document.querySelectorAll(".clip")];
+    const buttons = [...document.querySelectorAll('[data-testid="clip"]')];
     const b = buttons.find((b) => b.textContent.includes(name));
     if (!b) throw Error("Missing fixture " + name);
     b.click();
@@ -28,7 +28,9 @@
     await wait(250);
   };
   try {
-    await until(() => document.querySelectorAll(".clip").length > 0);
+    await until(
+      () => document.querySelectorAll('[data-testid="clip"]').length > 0,
+    );
     check(
       "original library excludes Preview",
       $("count").textContent === "26",
@@ -176,16 +178,18 @@
     $("search").value = "000_";
     $("search").dispatchEvent(new Event("input", { bubbles: true }));
     await wait(100);
-    const firstFolder = [...document.querySelectorAll(".folder")][0];
+    const firstFolder = [
+      ...document.querySelectorAll('[data-testid="folder"]'),
+    ][0];
     firstFolder.click();
     await wait(100);
-    const a = [...document.querySelectorAll(".clip")].find((b) =>
+    const a = [...document.querySelectorAll('[data-testid="clip"]')].find((b) =>
       b.textContent.includes("000_023859_A.mp4"),
     );
     a.click();
     document.querySelector('[data-folder="20260915_004"]').click();
     await wait(50);
-    const b = [...document.querySelectorAll(".clip")].find((b) =>
+    const b = [...document.querySelectorAll('[data-testid="clip"]')].find((b) =>
       b.textContent.includes("000_025643_A.mp4"),
     );
     b.click();
@@ -221,7 +225,7 @@
     await wait(100);
     check(
       "folder sessions grouped",
-      document.querySelectorAll(".folder").length === 4,
+      document.querySelectorAll('[data-testid="folder"]').length === 4,
     );
     await choose("000_023859_A.mp4");
     await until(() => $("route-empty").textContent.includes("No GPS fix"));

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>COMTEC — Local viewer</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="COMTEC Local viewer"><strong>COMTEC</strong><span>Local viewer</span></a>
+    <p class="read-only"><span class="status-dot" aria-hidden="true"></span>On this Mac. Originals stay untouched.</p>
+  </header>
+  <div class="workspace">
+    <aside class="library" aria-label="Recording library">
+      <div class="library-heading"><h1>Recordings <span id="clip-count">—</span></h1><button id="refresh" class="quiet" type="button" aria-label="Refresh recording folder">Refresh</button></div>
+      <label class="search-label" for="filter">Find a recording</label>
+      <input id="filter" type="search" placeholder="Search filename or folder" autocomplete="off">
+      <p id="library-status" class="library-status" role="status">Reading your local folder…</p>
+      <nav id="clip-list" class="clip-list" aria-label="Choose a recording"></nav>
+      <div class="library-footer"><span class="eyebrow">SOURCE FOLDER</span><p id="source-root">Documents / Dashcam</p><p>Added more recordings? Refresh to find them.</p></div>
+    </aside>
+    <main class="review">
+      <div class="review-heading"><div class="recording-title"><p id="clip-folder" class="eyebrow">CAMERA REVIEW</p><h2 id="clip-name">Your road, in perspective.</h2></div><button id="fullscreen" class="outline" type="button">Expand views</button></div>
+      <div class="status-line"><span id="prep-status" role="status" aria-live="polite">Choose a recording to get started.</span><button id="retry" class="quiet" type="button" hidden>Try again</button></div>
+      <section id="stage" class="stage" aria-label="Synchronized camera views">
+        <div class="camera-grid">
+          <section class="camera camera-front" aria-labelledby="front-label">
+            <div class="camera-heading"><h3 id="front-label"><span>01</span> Front view</h3><span class="camera-kind">360° lens</span></div>
+            <div class="camera-image"><canvas id="front-canvas" tabindex="0" aria-label="Front camera. Drag to look around; arrow keys to pan; plus and minus to zoom."></canvas></div>
+            <div class="view-tools"><span class="look-hint">Drag to look around</span><label for="front-zoom">Zoom</label><input id="front-zoom" type="range" min="40" max="130" value="70" aria-label="Front camera zoom"><button id="front-reset" type="button">Reset</button></div>
+          </section>
+          <section class="camera camera-cabin" aria-labelledby="cabin-label">
+            <div class="camera-heading"><h3 id="cabin-label"><span>02</span> Cabin view</h3><span class="camera-kind">Same moment</span></div>
+            <div class="camera-image"><canvas id="cabin-canvas" tabindex="0" aria-label="Cabin camera. Drag to look around; arrow keys to pan; plus and minus to zoom."></canvas></div>
+            <div class="view-tools"><label for="cabin-zoom">Zoom</label><input id="cabin-zoom" type="range" min="40" max="130" value="60" aria-label="Cabin camera zoom"><button id="cabin-reset" type="button">Reset</button></div>
+          </section>
+          <section class="camera camera-rear" aria-labelledby="rear-label">
+            <div class="camera-heading"><h3 id="rear-label"><span>03</span> Rear view</h3><span class="camera-kind">Original framing</span></div>
+            <div class="camera-image"><video id="rear-video" muted playsinline preload="auto" aria-label="Synchronized rear camera"></video></div>
+            <div class="rear-note">Synchronized with front · audio from main camera</div>
+          </section>
+        </div>
+        <div id="stage-message" class="stage-message"><p class="eyebrow">THREE VIEWS. ONE RECORDING.</p><p id="stage-message-text">Select a clip from your local library.</p></div>
+      </section>
+      <section class="transport" aria-label="Playback controls">
+        <div class="timeline"><span id="elapsed" class="time">00:00</span><input id="seek" type="range" min="0" max="0" step="0.01" value="0" aria-label="Seek recording" disabled><span id="duration" class="time">00:00</span></div>
+        <div class="transport-row">
+          <div class="play-controls"><button id="previous" class="outline" type="button" aria-label="Previous recording" title="Previous recording" disabled>Prev</button><button id="back" class="quiet" type="button" aria-label="Back five seconds" disabled>−5s</button><button id="play" class="play-button" type="button" disabled>Play</button><button id="forward" class="quiet" type="button" aria-label="Forward five seconds" disabled>+5s</button><button id="next" class="outline" type="button" aria-label="Next recording" title="Next recording" disabled>Next</button></div>
+          <div class="audio-controls"><label for="speed">Speed</label><select id="speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><button id="mute" class="quiet" type="button" aria-label="Mute audio" aria-pressed="false">Mute</button><input id="volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Audio volume"></div>
+        </div>
+      </section>
+      <footer class="review-footer"><p>Approximate lens correction. Drag each view to adjust your perspective.</p><p>Local playback · No Windows or GPS required</p></footer>
+    </main>
+  </div>
+  <video id="main-video" class="decoder-video" playsinline preload="auto" aria-hidden="true" tabindex="-1"></video>
+  <noscript><p class="noscript">Enable JavaScript to use the local camera viewer.</p></noscript>
+</body>
+</html>

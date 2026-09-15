@@ -1,0 +1,21 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+target/
+src-tauri/gen/
+.env
+.env.*
+!.env.example
+*.mp4
+*.MP4
+*.mov
+*.MOV
+# Bundled helpers are rebuilt from official source by scripts/build-media.sh.
+src-tauri/resources/media/ffmpeg
+src-tauri/resources/media/ffprobe
+src-tauri/resources/media/*.tar.xz
+# User-provided reference images and local validation artifacts.
+Screenshot*.png
+artifacts/

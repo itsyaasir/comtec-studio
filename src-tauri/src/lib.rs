@@ -1,0 +1,196 @@
+mod map;
+mod media;
+mod telemetry;
+use media::{Library, Media, Prepared};
+use std::{
+    path::PathBuf,
+    sync::{atomic::AtomicU64, Arc, Mutex},
+};
+use tauri::{Manager, State};
+#[tauri::command]
+async fn library(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<Media>>,
+    choose: bool,
+) -> Result<Option<Library>, String> {
+    let media = state.inner().clone();
+    let root = if choose {
+        let picked = rfd::AsyncFileDialog::new()
+            .set_title("Open COMTEC recordings")
+            .pick_folder()
+            .await;
+        match picked {
+            Some(folder) => folder.path().to_path_buf(),
+            None => return Ok(None),
+        }
+    } else {
+        media.root.lock().unwrap().clone()
+    };
+    media.cancel();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        let _lock = media.worker.lock().unwrap();
+        media.discover(root)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_title("COMTEC Studio");
+    }
+    Ok(Some(result))
+}
+#[tauri::command]
+async fn prepare(state: State<'_, Arc<Media>>, id: String) -> Result<Prepared, String> {
+    let media = state.inner().clone();
+    let ticket = media.cancel();
+    tauri::async_runtime::spawn_blocking(move || media.prepare(&id, ticket))
+        .await
+        .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn telemetry(
+    state: State<'_, Arc<Media>>,
+    id: String,
+) -> Result<telemetry::Telemetry, String> {
+    let media = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let clip = media
+            .clips
+            .lock()
+            .unwrap()
+            .get(&id)
+            .cloned()
+            .ok_or("Recording unavailable")?;
+        media.unchanged(&clip)?;
+        telemetry::read(&clip.path)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+fn cancel(state: State<'_, Arc<Media>>) {
+    state.cancel();
+}
+#[tauri::command]
+async fn clear_cache(state: State<'_, Arc<Media>>) -> Result<(), String> {
+    let media = state.inner().clone();
+    media.cancel();
+    tauri::async_runtime::spawn_blocking(move || media.clear())
+        .await
+        .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn cache_size(state: State<'_, Arc<Media>>) -> Result<u64, String> {
+    let path = state.cache.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        walkdir::WalkDir::new(path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+            .filter_map(|e| e.metadata().ok())
+            .map(|m| m.len())
+            .sum()
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+#[cfg(debug_assertions)]
+#[tauri::command]
+fn test_report(app: tauri::AppHandle, report: String) -> Result<(), String> {
+    if std::env::var_os("COMTEC_SMOKE_TEST").is_none() {
+        return Err("Test mode is disabled".into());
+    }
+    std::fs::write(
+        app.path()
+            .app_cache_dir()
+            .map_err(|e| e.to_string())?
+            .join("native-smoke.json"),
+        report,
+    )
+    .map_err(|e| e.to_string())
+}
+pub fn run() {
+    let builder = tauri::Builder::default().on_window_event(|window, event| {
+        if matches!(event, tauri::WindowEvent::Destroyed) {
+            window.state::<Arc<Media>>().cancel();
+        }
+    });
+    #[cfg(debug_assertions)]
+    let builder = builder
+        .on_page_load(|webview, payload| {
+            if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished)
+                && std::env::var_os("COMTEC_SMOKE_TEST").is_some()
+            {
+                let _ = webview.eval(include_str!("../../tests/native-smoke.js"));
+            }
+        })
+        .invoke_handler(tauri::generate_handler![
+            library,
+            prepare,
+            cancel,
+            clear_cache,
+            cache_size,
+            telemetry,
+            map::map_tile,
+            test_report
+        ]);
+    #[cfg(not(debug_assertions))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        library,
+        prepare,
+        cancel,
+        clear_cache,
+        cache_size,
+        telemetry,
+        map::map_tile
+    ]);
+    builder
+        .setup(|app| {
+            app.manage(
+                reqwest::Client::builder()
+                    .user_agent("COMTEC-Studio/0.1 (personal macOS recording viewer)")
+                    .timeout(std::time::Duration::from_secs(12))
+                    .build()?,
+            );
+            let config = app.path().app_config_dir()?.join("recording-folder");
+            #[cfg(debug_assertions)]
+            let config = if std::env::var_os("COMTEC_SMOKE_TEST").is_some() {
+                app.path().app_config_dir()?.join("smoke-recording-folder")
+            } else {
+                config
+            };
+            let root = std::fs::read_to_string(&config)
+                .map(PathBuf::from)
+                .unwrap_or(app.path().document_dir()?.join("Dashcam"));
+            #[cfg(debug_assertions)]
+            let root = if std::env::var_os("COMTEC_SMOKE_TEST").is_some() {
+                std::env::var("COMTEC_TEST_ROOT")
+                    .map(PathBuf::from)
+                    .unwrap_or(root)
+            } else {
+                root
+            };
+            let cache = app.path().app_cache_dir()?.join("media");
+            std::fs::create_dir_all(&cache)?;
+            app.manage(Arc::new(Media {
+                cache,
+                helpers: app.path().resource_dir()?.join("resources/media"),
+                config,
+                root: Mutex::new(root),
+                clips: Mutex::new(Default::default()),
+                generation: AtomicU64::new(0),
+                worker: Mutex::new(()),
+                child: Mutex::new(None),
+            }));
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("Unable to launch COMTEC Studio")
+        .run(|app, event| {
+            if matches!(
+                event,
+                tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. }
+            ) {
+                app.state::<Arc<Media>>().cancel();
+            }
+        });
+}

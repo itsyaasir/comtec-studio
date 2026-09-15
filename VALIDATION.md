@@ -1,0 +1,55 @@
+# Validation — 15 September 2026
+
+## Delivered build
+
+- Product: COMTEC Studio 0.1.0, Apple Silicon arm64.
+- Tauri 2.11.5 / WKWebView, bundled frontend and minimal FFmpeg 8.0.1 helpers.
+- Release bundle: approximately 28 MB, including corresponding FFmpeg source and license.
+- Minimum build target: macOS 12; runtime verification applies to this user's Mac.
+- Locally ad-hoc signed; `codesign --verify --deep --strict` passes. Public Developer ID signing/notarization is not configured.
+
+## Initial playback verification
+
+A packaged debug app using embedded production frontend assets completed 24 native smoke assertions. It did not use Vite, Python, Chrome, or the old viewer service. The opt-in test hook is absent from release builds.
+
+| Fixture | Verified behavior | Observed drift during playback |
+| --- | --- | --- |
+| Garage, `000_023859_A.mp4` | Paused load, play/pause, both cameras seek to 25s, 2× playback | 64 ms |
+| Night, `000_025643_A.mp4` | Paused load, play/pause, both cameras seek to 25s, 2× playback | 15 ms |
+| Short, `015_025359_A.mp4` | Paused load, play/pause, midpoint seek, 2× playback, end/replay | 30 ms |
+
+These are observations from individual checks, not a guarantee for every frame or recording. The renderer was also visually observed displaying front, cabin, and rear footage together in the native window. The native suite additionally checked all 26 library entries, mute, front-view reset, and rapid-selection stale-result protection.
+
+The main video reports 1856 × 1856 and the rear video reports 1920 × 1080. Both are decoded by WKWebView. Front and cabin are independently projected by the new WebGL implementation.
+
+## Installed release observation
+
+The installed release at `~/Applications/COMTEC Studio.app` was launched through macOS Launch Services. It restored the user-selected SD card folder and discovered 198 recordings. The release was visually observed playing daylight recording `20260914_012/002_150113_A.mp4` with all three views visible and transport advancing. Process inspection found no network sockets on either the test app or release app; the old viewer server remained untouched.
+
+## Backend and build
+
+- TypeScript check and production frontend build pass.
+- Six Rust tests pass, including explicitly enabled real-fixture tests.
+- Clippy passes with warnings denied.
+- Discovery test excludes Preview, hidden files/directories, and symlinks, and checks identity invalidation.
+- Timing tests cover format-duration fallback, start offset, invalid duration, and unsupported codec.
+- Lifecycle test starts a long-running helper, cancels it, and verifies that the child is reaped promptly.
+- Real-fixture tests invoke the newly built helpers, validate both prepared camera outputs, reuse the cache, and verify source identity is unchanged.
+- SHA-256 checksums of the three original recordings match their pre-test values.
+- Bundled FFmpeg and FFprobe link only to macOS system libraries; neither requires Homebrew. Their deployment target is macOS 12.0.
+- The app uses Tauri's local, byte-range-capable asset protocol, scoped to its own media cache. Seeking tests exercise this path.
+- The installed COMTEC Viewer and its source/cache, original recordings, and existing Preview exports were not modified.
+
+## GPS, graphs, and layout update
+
+- The packaged native smoke suite passed 36 assertions against the garage, night, and short recordings. This adds recorded speed, GPS route loading, missing-fix handling, six layout switches, session grouping, and graph containment to the original playback checks.
+- Live OpenStreetMap tiles were requested with the user's explicit approval and visually verified inside the native app, alongside the recorded route, speed, and all three green/red/purple traces.
+- The updated installed release restored all 198 SD-card recordings. Daylight clip `20260913_002/013_162121_G.mp4` displayed 49 km/h, live street tiles, all three graphs, and upright cabin occupants. Playback was started through the native controls.
+- The cabin now has a 180° roll, revised framing, and its own rotation control. Full cabin mode was visually checked against the actual footage. Four frontend tests cover the camera projection direction and recording groups/types.
+- The Rust telemetry parser's real-fixture test verified 600 samples without GPS in the garage, 600 with GPS in the night clip, and 64 with GPS in the short clip. Twelve Rust tests pass when real-fixture tests are enabled.
+- TypeScript, the release build, Clippy with warnings denied, bundle signing, and system-only dynamic dependency checks pass.
+- Earlier no-network-socket observations apply to the original playback-only build. The updated app makes outbound HTTPS requests for visible map tiles; playback still requires no server.
+
+## Boundaries
+
+Lens correction is approximate. The sensor display offers raw acceleration and consecutive-sample changes; it does not reproduce the vendor's undocumented smoothing/calibration. Export is not implemented. Testing covers representative garage/night/short recordings rather than every recording. Public distribution signing and verification on other Macs remain separate work.

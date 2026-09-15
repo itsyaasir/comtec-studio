@@ -323,7 +323,7 @@ The largest task. Converts the whole stage region.
   - `type CameraId = "front" | "cabin" | "rear"`
   - `<CameraPanel title actions? footer? hidden? className? children>` from `@/components/CameraPanel`
 
-- [ ] **Step 1: Read every scattered stage rule**
+- [x] **Step 1: Read every scattered stage rule**
 
 ```bash
 grep -n '\.stage\|\.camera\b\|\.camera-\|\.camera-focused\|\.empty-state\|\.empty-symbol\|\.lens-controls' src/style.css
@@ -331,7 +331,7 @@ grep -n '\.stage\|\.camera\b\|\.camera-\|\.camera-focused\|\.empty-state\|\.empt
 
 `.stage` has four definitions (512, 633, 643, 653), `.camera canvas` three (582, 591, 595), `.camera-actions button` two (560, 565). Read all of them before writing any utility.
 
-- [ ] **Step 2: Create the typed layout record**
+- [x] **Step 2: Create the typed layout record**
 
 Create `src/lib/stage-layouts.ts`:
 
@@ -377,7 +377,7 @@ export const STAGE_LAYOUTS = {
 
 `satisfies Record<StageLayout, …>` makes an unhandled layout a compile error. The current CSS silently falls through to the default grid.
 
-- [ ] **Step 3: Prove the exhaustiveness check works**
+- [x] **Step 3: Prove the exhaustiveness check works**
 
 Temporarily add `"quad"` to the `StageLayout` union in `src/lib/types.ts`, then:
 
@@ -387,7 +387,7 @@ npx tsc --noEmit
 
 Expected: FAIL — `Property 'quad' is missing in type ... but required in type 'Record<StageLayout, StageArrangement>'`. Remove `"quad"` again and re-run; expected clean. This confirms the guard is live rather than decorative.
 
-- [ ] **Step 4: Create CameraPanel**
+- [x] **Step 4: Create CameraPanel**
 
 Create `src/components/CameraPanel.tsx`. Colour mapping from the spec — `bg-zinc-950` body (was `#111317`), `bg-zinc-900` header (was `#1e2024`), `text-zinc-100` (was `#eee`), `text-zinc-400` header small (was `#8f939b`):
 
@@ -428,13 +428,13 @@ export function CameraPanel({ title, actions, footer, hidden, className, childre
 }
 ```
 
-- [ ] **Step 5: Convert CameraView to use CameraPanel**
+- [x] **Step 5: Convert CameraView to use CameraPanel**
 
 In `src/components/CameraView.tsx`, replace the `<article className={...}>` wrapper and its `<header>` with `<CameraPanel>`. Keep the canvas element, its `id={camera}`, all pointer handlers and the `tabIndex`/`role`/`aria-label` untouched. Apply to the canvas: `h-full w-full cursor-zoom-in object-cover`. Apply to the error overlay: `absolute inset-0 grid place-items-center bg-zinc-900 p-[30px] text-red-300` (was `#181a20` / `#ec9c98`).
 
 Move the action buttons into the `actions` prop and the zoom slider into `footer`.
 
-- [ ] **Step 6: Convert the stage and the inlined rear panel in App.tsx**
+- [x] **Step 6: Convert the stage and the inlined rear panel in App.tsx**
 
 Replace the stage `<div className="stage" ...>` with:
 
@@ -467,7 +467,7 @@ const arrangement = STAGE_LAYOUTS[cameraLayout];
 
 Replace the hand-inlined `<article className="camera rear">` block with `<CameraPanel title="Rear camera" hidden={…}>` wrapping the existing `<video id="rear" ref={rearRef} …>` — keep every attribute and handler.
 
-- [ ] **Step 7: Convert the empty state**
+- [x] **Step 7: Convert the empty state**
 
 Replace `.empty-state` / `.empty-symbol` with utilities. Gradient was `radial-gradient(ellipse at 50% 20%, #272c34, #15171c 70%)`:
 
@@ -486,7 +486,7 @@ Heading `text-[20px] font-[550] tracking-[-0.025em] text-zinc-100`; body `mt-2 m
 
 Per the spec, the 10px footnote uses `text-zinc-400`, **not** `text-zinc-500` — `zinc-500` on `zinc-950` is 4.12:1, a WCAG AA fail for normal-size text.
 
-- [ ] **Step 8: Convert `.camera-focused`**
+- [x] **Step 8: Convert `.camera-focused`**
 
 The `camera-focused` class on the shell (lines 1295-1323) hides the sidebar and expands the stage when a camera is expanded. Express its effects as conditional utilities on the shell/workspace/stage.
 
@@ -504,7 +504,7 @@ document.querySelector('[data-testid="desktop-shell"]').classList.contains("came
 
 This is the only task that adds this hook — Task 7 keeps it, and must not re-add it.
 
-- [ ] **Step 9: Delete the converted CSS**
+- [x] **Step 9: Delete the converted CSS**
 
 Remove lines 512-702 and 1295-1323 from `src/style.css`. Then confirm nothing dangles:
 
@@ -514,7 +514,7 @@ grep -n '\.stage\|\.camera\|\.empty-state\|\.empty-symbol\|\.lens-controls\|came
 
 Expected: no hits except `.camera-image video` cursor rules if not yet folded in — fold them into the canvas/video className and delete.
 
-- [ ] **Step 10: Verify**
+- [x] **Step 10: Verify** (partial — native-smoke not run)
 
 ```bash
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
@@ -522,13 +522,13 @@ npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
 
 Then run `tests/native-smoke.js`. The layout loop, the three expand assertions and the "uses window width" assertions must pass.
 
-- [ ] **Step 11: Verify the Lens is not being remounted**
+- [ ] **Step 11: Verify the Lens is not being remounted** (NOT DONE — needs a human)
 
 With a recording open, pan the front camera away from centre, switch to `cabin`, then back to `all`.
 
 Expected: the front camera retains its pan. If it re-centres, `hide` has been implemented as a conditional mount — fix it to use the `hidden` class.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add src/
@@ -553,6 +553,18 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+
+**Deviations made during execution** (all verified):
+
+1. `satisfies` -> explicit `Record<StageLayout, StageArrangement>` annotation. Under `satisfies`, `all`'s empty `hide` infers as `never[]`, so the Step 6 call `arrangement.hide.includes("front")` does not compile. The annotation keeps the exhaustiveness guarantee (proved in Step 3).
+2. Step 5's `cursor-zoom-in object-cover` for the canvas was wrong on both counts: `.camera canvas` is `cursor: grab` / `active: grabbing`, and `.camera canvas, .camera video` is `object-fit: contain`. `cover` would have cropped the camera image. `zoom-in`/`zoom-out` belongs to the rear `<video>`.
+3. Camera action buttons needed explicit `text-zinc-400 hover:bg-zinc-800 hover:text-white size-24` and `[&_svg:not([class*='size-'])]:size-12`. They are ghost Buttons using theme-flipping tokens that `.camera-actions button` was masking by specificity.
+4. Three scattered rules the task did not list: `.empty-symbol` / `.empty-state h3` / `.empty-state p` overrides inside the 1180px media query (now `max-[1180px]:` variants), and the `.camera-focused .stage` / `.camera-image video` pair, which had to move because their target classes were removed. The rest of `.camera-focused` targets classes Task 3 does not remove and stays in CSS.
+5. `.desktop-shell` is selected at `native-smoke.js` **277 and 303**, not just 277. Both updated.
+6. `.camera-number`, `.camera header small` and `.empty-state > span` had no JSX using them — dead rules, deleted rather than converted. `.loading-spin` and its `@keyframes spin` are replaced by Tailwind's `animate-spin`, which supplies its own `@keyframes spin` (verified in the built CSS).
+7. All class strings in this task were written under the pre-`--spacing: 1px` scale and were converted by 3.25x when applied (`px-2.5` -> `px-8`, `mx-4` -> `mx-16`).
+
+**Verification note:** a class whose declarations are byte-identical to another class is emitted by Tailwind as a merged selector list (`.min-h-150,.min-h-\[150px\]{min-height:150px}`). Checking the built CSS with a `\.name\{` regex gives false negatives; match on the class name as a substring.
 ### Task 4: Convert Transport
 
 **Files:**

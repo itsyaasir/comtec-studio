@@ -130,7 +130,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - `type StageLayout = Layout | "front" | "cabin" | "rear"` (stage renders)
   - `ToggleGroup`, `ToggleGroupItem` from `@/components/ui/toggle-group`
 
-- [ ] **Step 1: Install the shadcn toggle-group**
+- [x] **Step 1: Install the shadcn toggle-group**
 
 ```bash
 npx shadcn@latest add toggle-group
@@ -138,7 +138,7 @@ npx shadcn@latest add toggle-group
 
 Expected: creates `src/components/ui/toggle-group.tsx` (and `toggle.tsx`). Do not hand-roll — the Radix implementation supplies roving tabindex and `radiogroup`/`radio` semantics, which is the accessibility fix.
 
-- [ ] **Step 2: Split the Layout type**
+- [x] **Step 2: Split the Layout type**
 
 In `src/lib/types.ts`, replace the single `Layout` union with:
 
@@ -154,7 +154,7 @@ export type Layout = "all" | "split" | "panorama" | "round";
 export type StageLayout = Layout | "front" | "cabin" | "rear";
 ```
 
-- [ ] **Step 3: Verify the compiler finds every affected site**
+- [x] **Step 3: Verify the compiler finds every affected site**
 
 ```bash
 npx tsc --noEmit
@@ -162,7 +162,7 @@ npx tsc --noEmit
 
 Expected: FAIL. Errors at `src/App.tsx` (the `layouts` array still lists 7 values; `cameraLayout` is `Layout` but assigned `expanded ?? layout`) and `src/components/CameraView.tsx` (prop typed `Layout`, receives `StageLayout`). This failure is the point — it enumerates the work.
 
-- [ ] **Step 4: Narrow the switcher, widen the stage**
+- [x] **Step 4: Narrow the switcher, widen the stage**
 
 In `src/App.tsx`, reduce the `layouts` array to four entries:
 
@@ -183,7 +183,7 @@ const cameraLayout: StageLayout = expanded ?? layout;
 
 In `src/components/CameraView.tsx`, change the `layout` prop type from `Layout` to `StageLayout`. Update the import on both files.
 
-- [ ] **Step 5: Replace `.view-switch` with ToggleGroup**
+- [x] **Step 5: Replace `.view-switch` with ToggleGroup**
 
 In `src/App.tsx`, replace the `<div className="view-switch">` block (currently lines 186-200) with:
 
@@ -214,7 +214,7 @@ In `src/App.tsx`, replace the `<div className="view-switch">` block (currently l
 
 Note `onValueChange` fires with `""` when Radix deselects; the `if (v)` guard prevents clearing the layout.
 
-- [ ] **Step 6: Replace `.library-filter` with ToggleGroup**
+- [x] **Step 6: Replace `.library-filter` with ToggleGroup**
 
 In `src/components/LibrarySidebar.tsx`, replace the `<div className="library-filter">` block (lines 66-84) with:
 
@@ -241,7 +241,7 @@ In `src/components/LibrarySidebar.tsx`, replace the `<div className="library-fil
 </ToggleGroup>
 ```
 
-- [ ] **Step 7: Delete the superseded CSS**
+- [x] **Step 7: Delete the superseded CSS**
 
 Remove `src/style.css` lines 285-301 (`.library-filter` and its two child rules) and lines 492-511 (`.view-switch` and its two child rules). Re-grep first per the global constraint:
 
@@ -251,7 +251,7 @@ grep -n '\.view-switch\|\.library-filter' src/style.css
 
 Expected after deletion: only the `.view-switch { order: 3 }` hit inside the 1180px media query at line ~1086 remains. Change that one to target the ToggleGroup by adding `order-3` to its `className` and delete the media-query rule.
 
-- [ ] **Step 8: Update the smoke test**
+- [x] **Step 8: Update the smoke test**
 
 In `tests/native-smoke.js:214`, change:
 
@@ -267,7 +267,7 @@ for (const mode of ["split", "panorama", "round", "all"]) {
 
 `cabin` and `rear` are already covered by the click-to-expand loop at line 264, which asserts the identical `$("stage").dataset.layout === camera`.
 
-- [ ] **Step 9: Verify**
+- [x] **Step 9: Verify** (partial — see note)
 
 ```bash
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
@@ -275,11 +275,15 @@ npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
 
 Expected: all clean. Then build and run `tests/native-smoke.js` against the app; the four switcher assertions and the three expand assertions must pass.
 
-- [ ] **Step 10: Manually verify the accessibility fix**
+**Status:** `tsc --noEmit`, `eslint src`, `node --test tests/*.test.ts` (8/8) and `bun run build` all pass. The built CSS was inspected to confirm every arbitrary utility was emitted (`order:3` inside the 1180px query, `0 1px 3px`, `grid-template-columns`, `var(--selection)`). **`native-smoke.js` was NOT run** — it executes inside the Tauri debug app via `webview.eval` against a real recordings folder and is documented as opt-in and interactive. It must be run before this branch merges.
+
+- [ ] **Step 10: Manually verify the accessibility fix** (NOT DONE — needs a human)
 
 Focus the layout switcher and press Left/Right arrows. Expected: selection moves between items and the stage follows. Tab must move *past* the whole group in one press, not through four stops.
 
-- [ ] **Step 11: Commit**
+**Status:** not performed — no browser automation is available in this environment (the Playwright MCP server failed to connect) and the app runs under Tauri. Structural precondition verified instead: `@radix-ui/react-toggle-group` emits `role="radiogroup"`/`role="radio"`/`aria-checked` and wires `RovingFocusGroup`. The behaviour itself still needs a human pass.
+
+- [x] **Step 11: Commit**
 
 ```bash
 git add src/ tests/native-smoke.js package.json

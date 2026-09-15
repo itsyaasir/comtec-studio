@@ -57,34 +57,22 @@ export function Transport({
       </div>
       <div className="transport">
         <div className="transport-info">
-          <div className="speed-readout">
-            <Navigation size={16} />
-            <strong id="car-speed">
-              {sample?.speedKmh == null ? "—" : Math.round(sample.speedKmh)}
-            </strong>
-            <span>km/h</span>
+          <div className="telemetry-readout">
+            <div className="speed-readout">
+              <Navigation size={16} />
+              <strong id="car-speed">
+                {sample?.speedKmh == null ? "—" : Math.round(sample.speedKmh)}
+              </strong>
+              <span>km/h</span>
+            </div>
+            <time
+              className="recorded-time"
+              aria-label={sample?.recordedAt ?? "Recording time unavailable"}
+            >
+              <span>{sample?.recordedAt?.split(" ")[0] ?? "—"}</span>
+              <strong>{sample?.recordedAt?.split(" ")[1] ?? "—"}</strong>
+            </time>
           </div>
-          <span className="recorded-time">{sample?.recordedAt ?? ""}</span>
-          {!showMap && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Show map"
-              onClick={onShowMap}
-            >
-              <Map />
-            </Button>
-          )}
-          {!showMotion && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Show acceleration"
-              onClick={onShowMotion}
-            >
-              <Activity />
-            </Button>
-          )}
           <span id="status-text" className="sr-only" role="status">
             {p.status}
           </span>
@@ -156,6 +144,27 @@ export function Transport({
           </select>
         </div>
         <div className="audio">
+          {!showMap && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Show map"
+              onClick={onShowMap}
+            >
+              <Map />
+            </Button>
+          )}
+          {!showMotion && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Show acceleration"
+              onClick={onShowMotion}
+            >
+              <Activity />
+            </Button>
+          )}
+
           <Button
             id="mute"
             variant="ghost"

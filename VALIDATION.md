@@ -1,6 +1,23 @@
 # Validation — 15 September 2026
 
-## Current branch: direct playback with mp4-atom
+## Current branch: React desktop UI
+
+`chore/react-desktop-ui` rewrites the frontend using React 19.3, shadcn Luma, and Tailwind 4 on Vite 8. The tested Rust direct-playback backend remains unchanged.
+
+- Recommended React Hooks ESLint rules pass with no warnings or disabled rules; TypeScript and production Vite build pass.
+- Four frontend model tests and all 12 Rust tests pass, including actual recording indexes and telemetry.
+- The initial production-asset native run passed 39 playback checks. The extended run with React development assets and StrictMode enabled passed all **47** checks after correcting Settings focus restoration.
+- Native checks cover garage/night/short recordings, direct track URLs, paused load, synchronized play/pause/seek, 2× speed, end/replay, mute, view reset, rapid selection, recorded speed, missing GPS, sensor graphs, seven layouts, and session grouping.
+- Additional checks verify actual 256px street-map images, telemetry hide/remount, a single Leaflet container after remount, dialog focus containment, dark/light appearance, Escape dismissal, and focus returning to Settings.
+- A further production-React native run passed all 47 checks. The release restored 198 SD-card recordings and was visually observed playing daylight clip `002_150113_A.mp4`, showing 67 km/h, the street map, sensor traces, and all three camera views.
+- One release launch through the UI automation tool showed a blank window. Restarting the unchanged binary restored the workspace; the diagnostic production-React run did not reproduce a startup error. A root error boundary now provides recovery for unexpected React rendering failures. The final signed bundle was then opened successfully through normal macOS Launch Services and restored all 198 SD-card recordings.
+- The three fixture SHA-256 checksums match their pre-test values.
+- Production release build, ad-hoc signature verification, and system-library-only linkage checks pass. The installed viewers were not replaced.
+- This is a macOS-styled React interface in Tauri's native window; controls inside the webview are not AppKit controls. Public Developer ID signing/notarization remains outside this local build.
+
+The debug smoke script is opt-in and reports to the app cache; no private footage or GPS trace is committed. React development assets were used only for the lifecycle validation build. The release uses production React assets.
+
+## Previous branch: direct playback with mp4-atom
 
 The remux fallback, FFmpeg/FFprobe executables, helper-build scripts, and playback-cache controls are removed. `mp4-atom` 0.15 handles standard headers, timing fields, and chunk-offset decoding/encoding. The virtual-file mapping retains original sample bytes.
 
@@ -22,11 +39,11 @@ The remux fallback, FFmpeg/FFprobe executables, helper-build scripts, and playba
 
 A packaged debug app using embedded production frontend assets completed 24 native smoke assertions. It did not use Vite, Python, Chrome, or the old viewer service. The opt-in test hook is absent from release builds.
 
-| Fixture | Verified behavior | Observed drift during playback |
-| --- | --- | --- |
-| Garage, `000_023859_A.mp4` | Paused load, play/pause, both cameras seek to 25s, 2× playback | 64 ms |
-| Night, `000_025643_A.mp4` | Paused load, play/pause, both cameras seek to 25s, 2× playback | 15 ms |
-| Short, `015_025359_A.mp4` | Paused load, play/pause, midpoint seek, 2× playback, end/replay | 30 ms |
+| Fixture                    | Verified behavior                                               | Observed drift during playback |
+| -------------------------- | --------------------------------------------------------------- | ------------------------------ |
+| Garage, `000_023859_A.mp4` | Paused load, play/pause, both cameras seek to 25s, 2× playback  | 64 ms                          |
+| Night, `000_025643_A.mp4`  | Paused load, play/pause, both cameras seek to 25s, 2× playback  | 15 ms                          |
+| Short, `015_025359_A.mp4`  | Paused load, play/pause, midpoint seek, 2× playback, end/replay | 30 ms                          |
 
 These are observations from individual checks, not a guarantee for every frame or recording. The renderer was also visually observed displaying front, cabin, and rear footage together in the native window. The native suite additionally checked all 26 library entries, mute, front-view reset, and rapid-selection stale-result protection.
 

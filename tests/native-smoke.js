@@ -18,7 +18,9 @@
   };
   const choose = async (name) => {
     $("search").value = name;
-    $("search").dispatchEvent(new Event("input"));
+    $("search").dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(100);
+    await wait(100);
     const buttons = [...document.querySelectorAll(".clip")];
     const b = buttons.find((b) => b.textContent.includes(name));
     if (!b) throw Error("Missing fixture " + name);
@@ -72,7 +74,8 @@
       });
       const t = Math.min(25, source().duration / 2);
       $("seek").value = String(t);
-      $("seek").dispatchEvent(new Event("input"));
+      $("seek").dispatchEvent(new Event("input", { bubbles: true }));
+      await wait(100);
       await until(() => !source().seeking && !rear().seeking);
       check(
         name + " synchronized seek",
@@ -81,7 +84,8 @@
         { main: source().currentTime, rear: rear().currentTime, target: t },
       );
       $("speed").value = "2";
-      $("speed").dispatchEvent(new Event("change"));
+      $("speed").dispatchEvent(new Event("change", { bubbles: true }));
+      await wait(100);
       check(
         name + " 2x speed",
         source().playbackRate === 2 && rear().playbackRate === 2,
@@ -91,10 +95,12 @@
       $("play").click();
       check(name + " 2x playback advances", source().currentTime > t + 0.5);
       $("speed").value = "1";
-      $("speed").dispatchEvent(new Event("change"));
+      $("speed").dispatchEvent(new Event("change", { bubbles: true }));
+      await wait(100);
     }
     $("seek").value = $("seek").max - 0.3;
-    $("seek").dispatchEvent(new Event("input"));
+    $("seek").dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(100);
     await wait(200);
     $("play").click();
     await wait(900);
@@ -104,23 +110,32 @@
     check("short clip replays", source().currentTime < 2 && !source().paused);
     $("play").click();
     $("mute").click();
+    await wait(100);
     check("mute", source().muted);
     $("mute").click();
     $("front-zoom").value = "65";
-    $("front-zoom").dispatchEvent(new Event("input"));
+    $("front-zoom").dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(100);
     $("front-reset").click();
+    await wait(100);
     check("view reset", $("front-zoom").value === "100");
     $("search").value = "000_";
-    $("search").dispatchEvent(new Event("input"));
+    $("search").dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(100);
+    const firstFolder = [...document.querySelectorAll(".folder")][0];
+    firstFolder.click();
+    await wait(100);
     const a = [...document.querySelectorAll(".clip")].find((b) =>
       b.textContent.includes("000_023859_A.mp4"),
     );
+    a.click();
     document.querySelector('[data-folder="20260915_004"]').click();
+    await wait(50);
     const b = [...document.querySelectorAll(".clip")].find((b) =>
       b.textContent.includes("000_025643_A.mp4"),
     );
-    a.click();
     b.click();
+    await wait(100);
     await until(() => $("empty").hidden && !$("play").disabled);
     check(
       "rapid selection keeps latest",
@@ -148,7 +163,8 @@
       check(mode + " layout active", $("stage").dataset.layout === mode);
     }
     $("search").value = "";
-    $("search").dispatchEvent(new Event("input"));
+    $("search").dispatchEvent(new Event("input", { bubbles: true }));
+    await wait(100);
     check(
       "folder sessions grouped",
       document.querySelectorAll(".folder").length === 4,
@@ -160,6 +176,62 @@
       $("car-speed").textContent === "—",
     );
     await choose("000_025643_A.mp4");
+    await until(() =>
+      [...document.querySelectorAll("#route-map img.leaflet-tile")].some(
+        (img) => img.complete && img.naturalWidth === 256,
+      ),
+    );
+    check("street map tiles render", true);
+    const telemetryToggle = document.querySelector(
+      '[aria-label="Show route and motion"]',
+    );
+    telemetryToggle.click();
+    await wait(100);
+    check("telemetry can be hidden", !$("telemetry-panel"));
+    telemetryToggle.click();
+    await until(() => $("route-map") && $("route-empty").hidden);
+    check(
+      "map remounts without duplicate containers",
+      document.querySelectorAll(".leaflet-container").length === 1,
+    );
+    $("settings").click();
+    await until(() => document.querySelector('[role="dialog"]'));
+    check(
+      "settings traps focus",
+      document
+        .querySelector('[role="dialog"]')
+        .contains(document.activeElement),
+    );
+    const dialog = document.querySelector('[role="dialog"]');
+    const themes = [...dialog.querySelectorAll("button[aria-pressed]")];
+    const originalTheme = themes.find(
+      (b) => b.getAttribute("aria-pressed") === "true",
+    );
+    themes.find((b) => b.textContent === "Dark").click();
+    await wait(100);
+    check(
+      "dark appearance",
+      document.documentElement.classList.contains("dark"),
+    );
+    themes.find((b) => b.textContent === "Light").click();
+    await wait(100);
+    check(
+      "light appearance",
+      !document.documentElement.classList.contains("dark"),
+    );
+    originalTheme.click();
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+    await wait(250);
+    check(
+      "settings closes with Escape",
+      !document.querySelector('[role="dialog"]'),
+    );
+    check(
+      "settings restores keyboard focus",
+      document.activeElement === $("settings"),
+    );
   } catch (e) {
     results.push({
       name: "failure",
@@ -170,11 +242,13 @@
       rearError: rear()?.error?.code,
     });
   }
-  source().pause();
-  rear().pause();
+  source()?.pause();
+  rear()?.pause();
   await window.__TAURI_INTERNALS__.invoke("test_report", {
     report: JSON.stringify(
       {
+        suite: "react-luma",
+        startupError: document.getElementById("startup-error")?.textContent,
         results,
         passed: results.every((r) => r.pass),
         userAgent: navigator.userAgent,

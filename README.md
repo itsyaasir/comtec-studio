@@ -1,6 +1,6 @@
 # COMTEC Studio
 
-A standalone Apple Silicon macOS application for reviewing original two-camera COMTEC recordings. Built from scratch with Tauri v2, TypeScript, Rust, and a WebGL fisheye renderer.
+A standalone Apple Silicon macOS application for reviewing original two-camera COMTEC recordings. Built from scratch with Tauri v2, React, TypeScript, Rust, and a WebGL fisheye renderer.
 
 ## Open the app
 
@@ -19,7 +19,8 @@ Choose **Open recordings folder**, then select a clip. The default first-run loc
 - Switch between raw acceleration (including gravity) and sample-to-sample changes (Δg). Axis colors follow the original viewer: green forward/backward, red left/right, purple up/down.
 - Space plays or pauses; left/right arrows seek five seconds. Focused camera arrow keys pan instead.
 - F toggles native fullscreen, retaining the transport controls.
-- Settings includes playback information and keyboard shortcuts.
+- Settings includes system/light/dark appearance, playback information, and keyboard shortcuts.
+- Toggle the library or telemetry from the titlebar. Drag the divider above telemetry to resize it. ⌘ K focuses search.
 
 Original footage is opened read-only. Supported recordings play directly through an in-memory camera index, with no prepared video copies. Keep the original drive connected while playing. Unsupported layouts show an error; there is no conversion fallback. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
 
@@ -38,10 +39,12 @@ The debug development loop is `bun run tauri dev`. Its Vite development server i
 
 ## Architecture
 
-- `src/main.ts`: desktop workspace, library state, transport, synchronization, native IPC.
+- `src/main.tsx` and `src/App.tsx`: React entry point and desktop workspace.
+- `src/hooks/`: library state, transport, synchronization, and native IPC.
+- `src/components/`: library, cameras, transport, telemetry, and shadcn Luma controls.
 - `src/projection.ts`: independently implemented equidistant fisheye projection and camera interaction.
 - `src/style.css`: desktop layout, camera workspace, transport, and settings.
-- `src/telemetry.ts`: embedded OpenStreetMap route, speed, and acceleration graphs.
+- `src/components/TelemetryPanel.tsx` and `RouteMap.tsx`: recorded speed, sensor graphs, and embedded OpenStreetMap.
 - `src/camera-model.ts`: camera orientation basis and upright defaults.
 - `src/library-model.ts`: recording type and session labels.
 - `src-tauri/src/telemetry.rs`: bounded, read-only COMTEC CSODAT trailer parser.
@@ -54,9 +57,12 @@ Rust only accepts IDs from its discovered library. The in-process `track:` proto
 
 The original Python/browser source is archived in [`legacy/browser-viewer/`](legacy/browser-viewer/), with the historical handoff and reference screenshots under [`legacy/`](legacy/README.md). These files are not used by the Tauri build. The original installed viewer remains untouched.
 
+See [REACT_UI.md](REACT_UI.md) for React architecture and the skills/docs used.
+
 ## Verification
 
 ```sh
+bun run lint
 bun run build
 bun run test
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings

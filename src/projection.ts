@@ -6,6 +6,7 @@ export class Lens {
   private texture: WebGLTexture;
   private buffer: WebGLBuffer;
   private observer: ResizeObserver;
+  private events = new AbortController();
   private dirty = true;
   private lastTime = -1;
   private lost = false;
@@ -45,43 +46,63 @@ export class Lens {
     this.texture = gl.createTexture()!;
     this.buffer = gl.createBuffer()!;
     this.setup();
-    canvas.addEventListener("webglcontextlost", (e) => {
-      e.preventDefault();
-      this.lost = true;
-      failed("Graphics interrupted. Restoring camera views…");
-    });
-    canvas.addEventListener("webglcontextrestored", () => {
-      this.lost = false;
-      this.program = gl.createProgram()!;
-      this.texture = gl.createTexture()!;
-      this.buffer = gl.createBuffer()!;
-      try {
-        this.setup();
-        this.render(true);
-        failed("");
-      } catch (e) {
-        failed(String(e));
-      }
-    });
-    canvas.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0) return;
-      canvas.focus();
-      canvas.setPointerCapture(e.pointerId);
-      this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
-    });
-    canvas.addEventListener("pointermove", (e) => {
-      if (this.drag?.id !== e.pointerId) return;
-      const scale = this.fov / canvas.clientWidth;
-      this.yaw -= (e.clientX - this.drag.x) * scale;
-      this.pitch += (e.clientY - this.drag.y) * scale;
-      this.drag.x = e.clientX;
-      this.drag.y = e.clientY;
-      this.update();
-    });
+    canvas.addEventListener(
+      "webglcontextlost",
+      (e) => {
+        e.preventDefault();
+        this.lost = true;
+        failed("Graphics interrupted. Restoring camera views…");
+      },
+      { signal: this.events.signal },
+    );
+    canvas.addEventListener(
+      "webglcontextrestored",
+      () => {
+        this.lost = false;
+        this.program = gl.createProgram()!;
+        this.texture = gl.createTexture()!;
+        this.buffer = gl.createBuffer()!;
+        try {
+          this.setup();
+          this.render(true);
+          failed("");
+        } catch (e) {
+          failed(String(e));
+        }
+      },
+      { signal: this.events.signal },
+    );
+    canvas.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (e.button !== 0) return;
+        canvas.focus();
+        canvas.setPointerCapture(e.pointerId);
+        this.drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      },
+      { signal: this.events.signal },
+    );
+    canvas.addEventListener(
+      "pointermove",
+      (e) => {
+        if (this.drag?.id !== e.pointerId) return;
+        const scale = this.fov / canvas.clientWidth;
+        this.yaw -= (e.clientX - this.drag.x) * scale;
+        this.pitch += (e.clientY - this.drag.y) * scale;
+        this.drag.x = e.clientX;
+        this.drag.y = e.clientY;
+        this.update();
+      },
+      { signal: this.events.signal },
+    );
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
-      canvas.addEventListener(type, () => {
-        this.drag = undefined;
-      });
+      canvas.addEventListener(
+        type,
+        () => {
+          this.drag = undefined;
+        },
+        { signal: this.events.signal },
+      );
     canvas.addEventListener(
       "wheel",
       (e) => {
@@ -89,29 +110,42 @@ export class Lens {
         this.fov += Math.sign(e.deltaY) * 3;
         this.update();
       },
-      { passive: false },
+      { passive: false, signal: this.events.signal },
     );
-    canvas.addEventListener("keydown", (e) => {
-      const map: Record<string, () => void> = {
-        ArrowLeft: () => (this.yaw -= 5),
-        ArrowRight: () => (this.yaw += 5),
-        ArrowUp: () => (this.pitch += 5),
-        ArrowDown: () => (this.pitch -= 5),
-        "+": () => (this.fov -= 5),
-        "=": () => (this.fov -= 5),
-        "-": () => (this.fov += 5),
-      };
-      if (map[e.key]) {
-        e.preventDefault();
-        e.stopPropagation();
-        map[e.key]();
-        this.update();
-      }
-    });
+    canvas.addEventListener(
+      "keydown",
+      (e) => {
+        const map: Record<string, () => void> = {
+          ArrowLeft: () => (this.yaw -= 5),
+          ArrowRight: () => (this.yaw += 5),
+          ArrowUp: () => (this.pitch += 5),
+          ArrowDown: () => (this.pitch -= 5),
+          "+": () => (this.fov -= 5),
+          "=": () => (this.fov -= 5),
+          "-": () => (this.fov += 5),
+        };
+        if (map[e.key]) {
+          e.preventDefault();
+          e.stopPropagation();
+          map[e.key]();
+          this.update();
+        }
+      },
+      { signal: this.events.signal },
+    );
     for (const type of ["seeked", "loadeddata", "emptied"])
-      video.addEventListener(type, () => this.render(true));
+      video.addEventListener(type, () => this.render(true), {
+        signal: this.events.signal,
+      });
     this.observer = new ResizeObserver(() => this.render(true));
     this.observer.observe(canvas);
+  }
+  destroy() {
+    this.events.abort();
+    this.observer.disconnect();
+    this.gl.deleteTexture(this.texture);
+    this.gl.deleteBuffer(this.buffer);
+    this.gl.deleteProgram(this.program);
   }
   private setup() {
     const gl = this.gl;

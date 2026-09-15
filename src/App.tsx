@@ -148,7 +148,7 @@ export default function App() {
     <TooltipProvider>
       <Dialog open={settings} onOpenChange={setSettings}>
         <div className={`desktop-shell ${expanded ? "camera-focused" : ""}`}>
-          <header className="titlebar" data-tauri-drag-region>
+          <header className="titlebar" data-tauri-drag-region="deep">
             <div className="titlebar-left">
               <Button
                 variant="ghost"

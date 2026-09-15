@@ -156,7 +156,7 @@ export const LibrarySidebar = memo(function LibrarySidebar({
         <HardDrive size={16} />
         <span>
           <b>{l.root.split("/").pop() || "No folder selected"}</b>
-          <small>{l.clips.length} recordings · Read-only originals</small>
+          <small>{l.clips.length} recordings</small>
         </span>
       </div>
     </aside>

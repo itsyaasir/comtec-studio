@@ -51,7 +51,7 @@ Independent of the migration. Fixes two latent build breaks where production cod
 - Consumes: nothing
 - Produces: `cn` and `shadcn` as declared runtime dependencies. All later tasks rely on `cn` from `@/lib/utils` and on the `data-open:` / `data-closed:` variants from `shadcn/tailwind.css`.
 
-- [ ] **Step 1: Confirm both problems are real**
+- [x] **Step 1: Confirm both problems are real**
 
 ```bash
 node -e 'const p=require("./package.json");
@@ -64,7 +64,7 @@ grep -rn "clsx\|tailwind-merge" src/ || echo "clsx + tailwind-merge: ZERO import
 
 Expected: `cn` false/false, `shadcn` false/true, both imports present, zero `clsx` imports.
 
-- [ ] **Step 2: Confirm the silent-failure surface**
+- [x] **Step 2: Confirm the silent-failure surface**
 
 ```bash
 grep -ohE 'data-(open|closed):[a-z0-9-]+' src/components/ui/*.tsx | sort -u
@@ -72,34 +72,34 @@ grep -ohE 'data-(open|closed):[a-z0-9-]+' src/components/ui/*.tsx | sort -u
 
 Expected six variants (`data-open:animate-in`, `data-closed:animate-out`, `data-open:fade-in-0`, `data-closed:fade-out-0`, `data-open:zoom-in-95`, `data-closed:zoom-out-95`). These are defined only in `shadcn/dist/tailwind.css`. An undefined variant generates no rule and raises no error, so a `--omit=dev` install builds cleanly and loses every dialog/tooltip animation.
 
-- [ ] **Step 3: Apply the dependency changes**
+- [x] **Step 3: Apply the dependency changes**
 
 In `package.json`: add `"cn": "^0.2.6"` to `dependencies`; move `"shadcn": "^4.21.0"` from `devDependencies` to `dependencies`; delete `"clsx"` and `"tailwind-merge"` from `dependencies`.
 
-- [ ] **Step 4: Reinstall and verify**
+- [x] **Step 4: Reinstall and verify**
 
 ```bash
-pnpm install
+bun install
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
 ```
 
 Expected: install succeeds, all three clean.
 
-- [ ] **Step 5: Verify the production install no longer breaks**
+- [x] **Step 5: Verify the production install no longer breaks**
 
 ```bash
 rm -rf /tmp/prodcheck && mkdir -p /tmp/prodcheck
-cp package.json pnpm-lock.yaml /tmp/prodcheck/ 2>/dev/null || cp package.json bun.lock /tmp/prodcheck/
-cd /tmp/prodcheck && pnpm install --prod --ignore-scripts 2>&1 | tail -3
+cp package.json bun.lock /tmp/prodcheck/
+cd /tmp/prodcheck && bun install --production --ignore-scripts 2>&1 | tail -3
 ls node_modules/cn node_modules/shadcn >/dev/null && echo "BOTH RESOLVE IN PROD"
 ```
 
 Expected: `BOTH RESOLVE IN PROD`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
-git add package.json pnpm-lock.yaml
+git add package.json bun.lock
 git commit -m "Declare cn and shadcn as runtime dependencies
 
 src/lib/utils.ts imports cn, which was declared nowhere and resolved only as

@@ -1,12 +1,134 @@
 mod map;
 mod media;
 mod telemetry;
+mod tracks;
 use media::{Library, Media, Prepared};
 use std::{
     path::PathBuf,
     sync::{atomic::AtomicU64, Arc, Mutex},
 };
 use tauri::{Manager, State};
+#[derive(Default)]
+struct DirectPlayback(Mutex<Option<(String, tracks::Tracks)>>);
+
+#[tauri::command]
+async fn open_recording(
+    app: tauri::AppHandle,
+    state: State<'_, Arc<Media>>,
+    id: String,
+) -> Result<Prepared, String> {
+    let media = state.inner().clone();
+    let ticket = media.cancel();
+    tauri::async_runtime::spawn_blocking(move || {
+        let worker = media.worker.lock().unwrap();
+        let clip = media
+            .clips
+            .lock()
+            .unwrap()
+            .get(&id)
+            .cloned()
+            .ok_or("Recording unavailable")?;
+        media.unchanged(&clip)?;
+        let direct = tracks::Tracks::open(&clip.path);
+        media.unchanged(&clip)?;
+        if media.generation.load(std::sync::atomic::Ordering::SeqCst) != ticket {
+            return Err("Opening cancelled".into());
+        }
+        if let Ok(tracks) = direct {
+            let prepared = Prepared {
+                direct: true,
+                duration: tracks.duration,
+                start: 0.0,
+                main_path: format!("track://localhost/{id}/main.mp4"),
+                rear_path: format!("track://localhost/{id}/rear.mp4"),
+                sizes: [tracks.cameras[0].size, tracks.cameras[1].size],
+                version: 2,
+            };
+            *app.state::<DirectPlayback>().0.lock().unwrap() = Some((id, tracks));
+            Ok(prepared)
+        } else {
+            drop(worker);
+            media.prepare(&id, ticket)
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+fn track_response(
+    app: &tauri::AppHandle,
+    request: tauri::http::Request<Vec<u8>>,
+) -> tauri::http::Response<Vec<u8>> {
+    use tauri::http::{Response, StatusCode};
+    let error = |status| Response::builder().status(status).body(Vec::new()).unwrap();
+    if request.method() != "GET" && request.method() != "HEAD" {
+        return error(StatusCode::METHOD_NOT_ALLOWED);
+    }
+    if request.uri().host() != Some("localhost") {
+        return error(StatusCode::FORBIDDEN);
+    }
+    let Some((id, camera)) = request
+        .uri()
+        .path()
+        .strip_prefix('/')
+        .and_then(|v| v.split_once('/'))
+    else {
+        return error(StatusCode::NOT_FOUND);
+    };
+    let index = match camera {
+        "main.mp4" => 0,
+        "rear.mp4" => 1,
+        _ => return error(StatusCode::NOT_FOUND),
+    };
+    let state = app.state::<DirectPlayback>();
+    let track = {
+        let active = state.0.lock().unwrap();
+        match active.as_ref() {
+            Some((active_id, tracks)) if active_id == id => tracks.cameras[index].clone(),
+            _ => return error(StatusCode::NOT_FOUND),
+        }
+    };
+    let media = app.state::<Arc<Media>>();
+    let clip = media.clips.lock().unwrap().get(id).cloned();
+    if !clip.is_some_and(|clip| media.unchanged(&clip).is_ok()) {
+        return error(StatusCode::GONE);
+    }
+    let header = request.headers().get("Range");
+    let range = match header.map(|h| h.to_str()).transpose() {
+        Ok(value) => tracks::range(value, track.size),
+        Err(_) => Err("Invalid range".into()),
+    };
+    let Ok((start, end)) = range else {
+        return Response::builder()
+            .status(416)
+            .header("Content-Range", format!("bytes */{}", track.size))
+            .body(Vec::new())
+            .unwrap();
+    };
+    let body = if request.method() == "HEAD" {
+        Vec::new()
+    } else {
+        match track.read(start, end - start + 1) {
+            Ok(b) => b,
+            Err(_) => return error(StatusCode::GONE),
+        }
+    };
+    let partial = header.is_some() || end + 1 < track.size;
+    let mut response = Response::builder()
+        .status(if partial { 206 } else { 200 })
+        .header("Content-Type", "video/mp4")
+        .header("Accept-Ranges", "bytes")
+        .header("Access-Control-Allow-Origin", "tauri://localhost")
+        .header("Cache-Control", "no-store")
+        .header("Content-Length", end - start + 1);
+    if partial {
+        response = response.header(
+            "Content-Range",
+            format!("bytes {start}-{end}/{}", track.size),
+        );
+    }
+    response.body(body).unwrap()
+}
 #[tauri::command]
 async fn library(
     app: tauri::AppHandle,
@@ -109,11 +231,19 @@ fn test_report(app: tauri::AppHandle, report: String) -> Result<(), String> {
     .map_err(|e| e.to_string())
 }
 pub fn run() {
-    let builder = tauri::Builder::default().on_window_event(|window, event| {
-        if matches!(event, tauri::WindowEvent::Destroyed) {
-            window.state::<Arc<Media>>().cancel();
-        }
-    });
+    let builder = tauri::Builder::default()
+        .manage(DirectPlayback::default())
+        .register_asynchronous_uri_scheme_protocol("track", |context, request, responder| {
+            let app = context.app_handle().clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                responder.respond(track_response(&app, request))
+            });
+        })
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                window.state::<Arc<Media>>().cancel();
+            }
+        });
     #[cfg(debug_assertions)]
     let builder = builder
         .on_page_load(|webview, payload| {
@@ -125,6 +255,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             library,
+            open_recording,
             prepare,
             cancel,
             clear_cache,
@@ -136,6 +267,7 @@ pub fn run() {
     #[cfg(not(debug_assertions))]
     let builder = builder.invoke_handler(tauri::generate_handler![
         library,
+        open_recording,
         prepare,
         cancel,
         clear_cache,

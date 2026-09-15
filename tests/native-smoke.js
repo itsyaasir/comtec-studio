@@ -38,7 +38,13 @@
       "000_025643_A.mp4",
       "015_025359_A.mp4",
     ]) {
+      const openedAt = performance.now();
       await choose(name);
+      check(
+        name + " reads directly without preparation",
+        source().dataset.delivery === "direct",
+        { openMs: Math.round(performance.now() - openedAt) },
+      );
       check(name + " loads paused", source().paused && rear().paused, {
         main: [source().videoWidth, source().videoHeight],
         rear: [rear().videoWidth, rear().videoHeight],

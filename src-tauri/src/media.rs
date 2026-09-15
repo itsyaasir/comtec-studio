@@ -33,6 +33,8 @@ pub struct Library {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Prepared {
+    #[serde(default)]
+    pub direct: bool,
     pub duration: f64,
     pub start: f64,
     pub main_path: String,
@@ -341,6 +343,7 @@ impl Media {
                 return Err("The prepared camera tracks do not overlap.".into());
             }
             let ready = Prepared {
+                direct: false,
                 duration: end,
                 start,
                 main_path: directory.join("main.mp4").to_string_lossy().into(),

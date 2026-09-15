@@ -39,6 +39,7 @@ interface Library {
   clips: Clip[];
 }
 interface Prepared {
+  direct: boolean;
   duration: number;
   start: number;
   mainPath: string;
@@ -331,26 +332,47 @@ async function select(clip: Clip) {
   drawList();
   $("clip-title").textContent = clip.name;
   $("clip-kind").textContent = `${kind(clip)} recording / ${clip.folder}`;
-  status("Preparing camera tracks…");
+  status("Opening camera tracks…");
   overlay(
-    "Preparing your recording",
-    "Separating camera tracks without changing video quality.",
+    "Opening your recording",
+    "Reading the camera index. Original recordings stay untouched.",
   );
   const telemetryPromise = invoke<Telemetry>("telemetry", {
     id: clip.id,
   }).catch((e) => ({ samples: [], message: String(e) }));
   try {
-    const result = await invoke<Prepared>("prepare", { id: clip.id });
+    let result = await invoke<Prepared>("open_recording", { id: clip.id });
     if (n !== generation) return;
-    const mainReady = loaded(source, loadAbort.signal),
-      rearReady = loaded(rear, loadAbort.signal);
-    source.src = convertFileSrc(result.mainPath);
-    rear.src = convertFileSrc(result.rearPath);
-    source.load();
-    rear.load();
-    await Promise.all([mainReady, rearReady]);
+    const loadTracks = async (media: Prepared) => {
+      const mainReady = loaded(source, loadAbort.signal),
+        rearReady = loaded(rear, loadAbort.signal);
+      source.src = media.direct
+        ? media.mainPath
+        : convertFileSrc(media.mainPath);
+      rear.src = media.direct ? media.rearPath : convertFileSrc(media.rearPath);
+      source.load();
+      rear.load();
+      await Promise.all([mainReady, rearReady]);
+    };
+    try {
+      await loadTracks(result);
+    } catch (e) {
+      if (!result.direct || n !== generation || loadAbort.signal.aborted)
+        throw e;
+      loadAbort.abort();
+      loadAbort = new AbortController();
+      status("Preparing compatible playback…");
+      overlay(
+        "Preparing compatible playback",
+        "This recording needs separate camera files. Video quality stays unchanged.",
+      );
+      result = await invoke<Prepared>("prepare", { id: clip.id });
+      if (n !== generation) return;
+      await loadTracks(result);
+    }
     if (n !== generation) return;
     current = result;
+    source.dataset.delivery = result.direct ? "direct" : "cache";
     void telemetryPromise.then((data) => {
       if (n === generation) telemetryPanel.set(data, result.duration);
     });

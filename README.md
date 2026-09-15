@@ -21,7 +21,7 @@ Choose **Open recordings folder**, then select a clip. The default first-run loc
 - F toggles native fullscreen, retaining the transport controls.
 - Settings includes playback-cache size, cache clearing, and keyboard shortcuts.
 
-Original footage is opened read-only. Lossless, separately playable camera tracks are written to `~/Library/Caches/app.comtec.studio/media`. Clearing this cache never targets the recordings folder or the previous viewer's cache. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
+Original footage is opened read-only. Supported recordings play directly through an in-memory camera index, with no prepared video copies. Keep the original drive connected while playing. Unsupported layouts fall back to lossless camera files in `~/Library/Caches/app.comtec.studio/media`. Clearing this cache never targets the recordings folder or the previous viewer's cache. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
 
 ## Build
 
@@ -49,8 +49,9 @@ The debug development loop is `bun run tauri dev`. Its Vite development server i
 - `src-tauri/src/map.rs`: fixed-host OSM tile requests and seven-day on-demand cache.
 - `src-tauri/src/lib.rs`: command boundary, native folder picker, app paths, lifecycle.
 - `src-tauri/src/media.rs`: discovery, immutable source identities, probing, remuxing, cancellation, cache validation.
+- `src-tauri/src/tracks.rs`: virtual MP4 indexes, original-file range reads, and direct-playback validation.
 
-Rust only accepts IDs from its discovered library for preparation. Preparation uses a serialized worker and cancellable child processes. Outputs retain a common timestamp origin and the playable overlapping interval. Staged media becomes ready only after both outputs have been probed and the recording identity is rechecked. Tauri's range-capable asset protocol is scoped to this app's media cache. The webview cannot read arbitrary paths or run arbitrary commands. Production CSP prevents remote scripts and frontend network API calls. Rust fetches only validated tile coordinates from the fixed OpenStreetMap tile host. No recording is uploaded.
+Rust only accepts IDs from its discovered library. The in-process `track:` protocol exposes the active recording's camera views and checks original-file identity on each request. Compatibility preparation uses a serialized worker and cancellable child processes. Its outputs retain a common timestamp origin and the playable overlapping interval. Staged media becomes ready only after both outputs have been probed and the recording identity is rechecked. Tauri's asset protocol is scoped to this app's caches. The webview cannot read arbitrary paths or run arbitrary commands. Production CSP prevents remote scripts and frontend network API calls. Rust fetches only validated tile coordinates from the fixed OpenStreetMap tile host. No recording is uploaded. See [DIRECT_PLAYBACK.md](DIRECT_PLAYBACK.md) for the format boundary and validation.
 
 The original Python/browser source is archived in [`legacy/browser-viewer/`](legacy/browser-viewer/), with the historical handoff and reference screenshots under [`legacy/`](legacy/README.md). These files are not used by the Tauri build. The original installed viewer remains untouched.
 

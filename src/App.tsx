@@ -318,7 +318,7 @@ export default function App() {
                         ? "Unable to open recording"
                         : "Select a recording"}
                   </h3>
-                  <p className="mt-8 mb-18 max-w-340 text-xs leading-[1.6] text-zinc-400 max-[1180px]:mt-5 max-[1180px]:mb-10">
+                  <p className="mt-8 mb-18 max-w-340 text-[12px] leading-[1.6] text-zinc-400 max-[1180px]:mt-5 max-[1180px]:mb-10">
                     {player.error ||
                       "Choose a session and recording from your library."}
                   </p>

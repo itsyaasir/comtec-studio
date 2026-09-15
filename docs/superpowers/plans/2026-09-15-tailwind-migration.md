@@ -18,6 +18,7 @@
 - **`data-layout` stays on the stage element and on each switcher item** — `native-smoke.js:215,217` selects on both.
 - **`id` attributes must not be removed.** 21 `getElementById` calls in `native-smoke.js` depend on them.
 - **Root font-size stays 13px**, and `--spacing: 1px` (set in `@theme`) makes the spacing scale pixel-denominated: `h-49` *is* 49px, `mx-16` *is* 16px. Write existing px measurements as plain scale utilities, not arbitrary syntax. Arbitrary values remain correct for properties that do not derive from `--spacing` — `text-[11px]`, `rounded-[7px]`, `shadow-[...]`. Superseded the earlier rule requiring `h-[49px]`: with the default 0.25rem unit against a 13px root, every utility rendered at 0.8125x nominal, so `p-4` was 13px. The five shadcn primitives were rescaled by 3.25x when this landed, preserving their rendered sizes; regenerating one via `shadcn add` will reintroduce the old scale and must be rescaled again.
+- **`text-*` utilities are rem-based and are NOT affected by `--spacing: 1px`.** Against the 13px root, `text-xs` is 9.75px (not 12), `text-sm` is 11.375px (not 14), `text-base` is 13px. Write font sizes as arbitrary px (`text-[12px]`) whenever the CSS being replaced states a px value. The same applies to `leading-*`, `rounded-*` and `ring-*`, which also derive from rem or their own scales.
 - Verification gate for every task: `npx tsc --noEmit` clean, `npx eslint src` clean, `node --test tests/*.test.ts` passing.
 
 ## Why there are no unit tests in these tasks

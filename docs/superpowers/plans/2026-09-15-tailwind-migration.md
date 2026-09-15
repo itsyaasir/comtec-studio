@@ -575,7 +575,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: nothing new
 - Produces: nothing consumed by later tasks
 
-- [ ] **Step 1: Read both scattered blocks**
+- [x] **Step 1: Read both scattered blocks**
 
 ```bash
 grep -n '\.playback\|\.timeline\|\.transport\|\.status-dot\|\.play-button\|\.audio\|\.speed-readout\|\.recorded-time\|\.telemetry-readout' src/style.css
@@ -583,33 +583,33 @@ grep -n '\.playback\|\.timeline\|\.transport\|\.status-dot\|\.play-button\|\.aud
 
 `.transport` @ 950 **and** 1226, `.transport-buttons` @ 979 **and** 1273, `.audio` @ 1007 **and** 1269, `.transport-buttons button small` @ 987 **and** 1292. The later block wins — convert to the *effective* computed style, not the first definition.
 
-- [ ] **Step 2: Convert the timeline row**
+- [x] **Step 2: Convert the timeline row**
 
 `.timeline` → `flex items-center gap-2.5 px-4`; its spans → `text-[10px] tabular-nums text-muted-foreground`; the range input keeps `id="seek"` and gains `flex-1`.
 
-- [ ] **Step 3: Convert the readouts**
+- [x] **Step 3: Convert the readouts**
 
 `.speed-readout` → `flex items-baseline gap-[5px]`, its `<strong>` → `text-[25px] font-[550] leading-none tracking-[-0.05em] tabular-nums`, its `<span>` → `text-[10px] text-muted-foreground`, its svg → `self-center mr-1 text-muted-foreground`.
 
 `.recorded-time` → `flex flex-col justify-center gap-[3px] border-l border-border pl-3 text-[10px] leading-none tabular-nums whitespace-nowrap text-muted-foreground`, its `<strong>` → `text-xs font-medium text-foreground`.
 
-- [ ] **Step 4: Convert the transport buttons**
+- [x] **Step 4: Convert the transport buttons**
 
 `.transport-buttons` → `flex items-center gap-1`. The `<small>` badge on the seek buttons → `absolute text-[7px] font-semibold`. `.play-button` keeps `id="play"` and the shadcn `size="icon-lg"`.
 
-- [ ] **Step 5: Convert the audio group**
+- [x] **Step 5: Convert the audio group**
 
 `.audio` → `flex items-center gap-1 justify-self-end`; the volume input → `w-[70px]` with `accent-primary` replacing the hardcoded `accent-color: #618dc1`.
 
-- [ ] **Step 6: Fold in the 1180px overrides**
+- [x] **Step 6: Fold in the 1180px overrides**
 
 Lines 1226-1294 narrow gaps and shrink the volume input below 1180px. Express as responsive variants using an arbitrary breakpoint, e.g. `max-[1180px]:gap-0.5` and `max-[1180px]:w-[50px]`.
 
-- [ ] **Step 7: Delete the converted CSS**
+- [x] **Step 7: Delete the converted CSS**
 
 Remove lines 926-1015 and 1226-1294. Re-grep to confirm no dangling `.transport*` / `.audio` / `.timeline` selectors remain.
 
-- [ ] **Step 8: Verify**
+- [x] **Step 8: Verify**
 
 ```bash
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
@@ -617,7 +617,7 @@ npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
 
 Then run `tests/native-smoke.js` — it drives `$("play")`, `$("seek")`, `$("mute")`, `$("speed")`, `$("car-speed")` and `$("status-text")`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/
@@ -629,6 +629,31 @@ accent-color with the primary token.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
+
+
+**Execution notes (Task 4):**
+
+- Step 8 is PARTIAL. `tsc --noEmit`, `eslint src`, `node --test` (8/8) and
+  `bun run build` all pass. `tests/native-smoke.js` was NOT run — it executes
+  inside the Tauri debug app via `webview.eval` against a real recordings
+  folder, and no browser automation is available in this session. The ids it
+  drives (`play`, `seek`, `mute`, `speed`, `car-speed`, `status-text`) are all
+  still present in the JSX; that is a static check, not the test.
+- The plan's numbers were taken from each selector's FIRST definition, but
+  several were overridden later in the file. The effective values were used:
+  `.transport-buttons` gap 6px (not 4), skip badge 8px (not 7),
+  `.speed-readout strong` 23px (not 25), `.audio` gap 5px (not 2),
+  `.audio input` 75px (not 70). `.speed-readout` itself was defined at line 521,
+  outside the plan's stated line range.
+- The transport buttons' CSS sizes (40px; play 50px) beat the shadcn `size`
+  variants by specificity, so they are explicit `size-*` utilities.
+- `.recorded-at` and `.status-dot` were dead CSS — no JSX referenced them.
+- `accent-primary` was applied to all three range inputs (seek, volume,
+  front-zoom) and `accent-color: #618dc1` removed from the global
+  `input[type="range"]` rule; the plan's volume-only change would have left the
+  zoom slider inconsistent. That rule keeps `height: 12px; cursor: pointer`
+  for Task 8.
+- `style.css`: 1074 -> 874 lines, braces balanced 143/143.
 
 ---
 

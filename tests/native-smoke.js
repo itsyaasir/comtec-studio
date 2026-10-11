@@ -21,7 +21,7 @@
     $("search").dispatchEvent(new Event("input", { bubbles: true }));
     await wait(100);
     const buttons = [...document.querySelectorAll('[data-testid="clip"]')];
-    const b = buttons.find((b) => b.textContent.includes(name));
+    const b = buttons.find((b) => b.dataset.name === name);
     if (!b) throw Error("Missing fixture " + name);
     b.click();
     await until(() => $("empty").hidden && !$("play").disabled);
@@ -39,11 +39,15 @@
     const shell = document.querySelector('[data-testid="desktop-shell"]');
     const workspace = document.querySelector('[data-testid="workspace"]');
     const titlebar = shell.querySelector("header");
+    const sidebarTitlebar = shell.querySelector(
+      '[data-testid="sidebar-titlebar"]',
+    );
     const decoderStyle = getComputedStyle(source());
     check(
       "titlebar keeps native traffic-light spacing",
       titlebar.getBoundingClientRect().height === 49 &&
-        getComputedStyle(titlebar).paddingLeft === "90px",
+        sidebarTitlebar.getBoundingClientRect().height === 49 &&
+        !sidebarTitlebar.querySelector("button"),
     );
     check(
       "source decoder remains mounted and invisible",
@@ -58,25 +62,58 @@
         getComputedStyle($("volume")).height === "12px" &&
         getComputedStyle($("front-zoom")).height === "12px",
     );
-    const sidebarToggle = document.querySelector(
-      '[aria-label="Toggle recording sidebar"]',
-    );
-    sidebarToggle.click();
+    const sidebarToggle = () =>
+      document.querySelector('[aria-label="Toggle recording sidebar"]');
+    const sidebarWidth = () =>
+      document.getElementById("library").getBoundingClientRect().width;
+    const openWidth = sidebarWidth();
+    const review = workspace.querySelector("main");
+    sidebarToggle().click();
     await wait(100);
     check(
       "hidden sidebar gives review full width",
       Math.abs(
-        workspace.querySelector("main").getBoundingClientRect().width -
+        review.getBoundingClientRect().width -
           workspace.getBoundingClientRect().width,
-      ) < 1,
+      ) < 1 &&
+        !workspace.querySelector('[aria-label="Library"]') &&
+        getComputedStyle(titlebar).paddingLeft === "90px",
+      { review: review.getBoundingClientRect().width },
     );
-    sidebarToggle.click();
+    sidebarToggle().click();
     await wait(100);
     check(
-      "restored sidebar keeps desktop width",
-      workspace.querySelector("aside").getBoundingClientRect().width ===
-        (innerWidth <= 1180 ? 290 : 334),
+      "restored sidebar keeps its width",
+      openWidth >= 240 &&
+        openWidth <= 440 &&
+        Math.abs(sidebarWidth() - openWidth) < 1 &&
+        workspace.querySelector("main") === review,
+      { openWidth, restored: sidebarWidth() },
     );
+    const handle = workspace.querySelector('[role="separator"]');
+    const nudge = async (key) => {
+      handle.dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true }),
+      );
+      await wait(100);
+      return sidebarWidth();
+    };
+    // Step away from the nearer limit so the first nudge cannot be clamped.
+    const [away, back] =
+      openWidth > 340
+        ? ["ArrowLeft", "ArrowRight"]
+        : ["ArrowRight", "ArrowLeft"];
+    handle.focus();
+    const resizedWidth = await nudge(away);
+    check(
+      "sidebar resizes from its handle",
+      Math.abs(resizedWidth - openWidth) > 8 &&
+        resizedWidth >= 240 &&
+        resizedWidth <= 440,
+      { openWidth, resizedWidth },
+    );
+    await nudge(back);
+    handle.blur();
     for (const name of [
       "000_023859_A.mp4",
       "000_025643_A.mp4",
@@ -230,14 +267,14 @@
     ][0];
     firstFolder.click();
     await wait(100);
-    const a = [...document.querySelectorAll('[data-testid="clip"]')].find((b) =>
-      b.textContent.includes("000_023859_A.mp4"),
+    const a = [...document.querySelectorAll('[data-testid="clip"]')].find(
+      (b) => b.dataset.name === "000_023859_A.mp4",
     );
     a.click();
     document.querySelector('[data-folder="20260915_004"]').click();
     await wait(50);
-    const b = [...document.querySelectorAll('[data-testid="clip"]')].find((b) =>
-      b.textContent.includes("000_025643_A.mp4"),
+    const b = [...document.querySelectorAll('[data-testid="clip"]')].find(
+      (b) => b.dataset.name === "000_025643_A.mp4",
     );
     b.click();
     await wait(100);

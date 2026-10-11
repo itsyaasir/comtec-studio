@@ -6,7 +6,8 @@ The UI rewrite lives on `chore/react-desktop-ui`, based on `main` at `202d116`. 
 
 - React 19.3, TypeScript, Vite 8, and Tailwind CSS 4.
 - Official shadcn/ui **Luma** preset with Radix primitives. `components.json` records the preset; generated components live in `src/components/ui`.
-- macOS system typography, native window controls, a session sidebar, seven camera layouts, and light/dark/system appearance.
+- macOS system typography, native window controls, a resizable and collapsible session sidebar, seven camera layouts, and light/dark/system appearance.
+- The workspace is a shadcn `Resizable` group (`react-resizable-panels`). shadcn's `Sidebar` collapses but cannot be resized, so it is not used. The library panel keeps its pixel width when the window resizes and unmounts its contents while collapsed.
 - Existing Rust Tauri commands, direct `track:` playback, telemetry parsing, and WebGL projection.
 
 ## Boundaries and practices

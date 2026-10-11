@@ -3,12 +3,12 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 const sidebarRowVariants = cva(
-  "focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none flex w-full items-center gap-7 rounded-[6px] text-left transition-colors hover:bg-muted aria-[current=true]:bg-secondary",
+  "flex w-full items-center rounded-[6px] text-left transition-colors hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none",
   {
     variants: {
       variant: {
-        folder: "mb-3 px-5 py-10",
-        clip: "relative mb-2 px-7 py-11",
+        folder: "h-30 gap-6 pr-8 pl-5",
+        clip: "h-28 scroll-mt-32 justify-between gap-8 px-8 aria-[current=true]:bg-(--selection) aria-[current=true]:text-(--selection-text)",
       },
     },
     defaultVariants: {

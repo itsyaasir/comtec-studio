@@ -27,6 +27,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { usePanelRef } from "react-resizable-panels";
 import { CameraView } from "@/components/CameraView";
 import { LibrarySidebar } from "@/components/LibrarySidebar";
 import { TelemetryPanel } from "@/components/TelemetryPanel";
@@ -50,6 +56,13 @@ function initialTheme(): Theme {
   const value = localStorage.getItem("comtec.theme.v1");
   return value === "light" || value === "dark" ? value : "system";
 }
+const SIDEBAR_WIDTH = { default: 300, min: 240, max: 440 };
+function initialSidebarWidth(): number {
+  const value = Number(localStorage.getItem("comtec.sidebar.v1"));
+  return value >= SIDEBAR_WIDTH.min && value <= SIDEBAR_WIDTH.max
+    ? value
+    : SIDEBAR_WIDTH.default;
+}
 export default function App() {
   const { source: sourceRef, rear: rearRef, ...player } = usePlayback(),
     library = useLibrary(player.reset);
@@ -65,12 +78,14 @@ export default function App() {
   const [layout, setLayout] = useState<Layout>("all"),
     [settings, setSettings] = useState(false),
     [sidebar, setSidebar] = useState(true),
+    [sidebarWidth] = useState(initialSidebarWidth),
     [showMap, setShowMap] = useState(true),
     [showMotion, setShowMotion] = useState(true),
     [expanded, setExpanded] = useState<"front" | "cabin" | "rear" | null>(null),
     [theme, setTheme] = useState<Theme>(initialTheme),
     [telemetryHeight, setTelemetryHeight] = useState(200);
   const drag = useRef<{ y: number; height: number } | null>(null);
+  const libraryRef = usePanelRef();
   const adjacent = useCallback(
     (delta: number) => {
       const i = library.filtered.findIndex((c) => c.id === selected?.id);
@@ -121,13 +136,15 @@ export default function App() {
     }
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
+      libraryRef.current?.expand();
+      // Mount the search field in this event rather than waiting for the panel to report its size.
       setSidebar(true);
       requestAnimationFrame(() => document.getElementById("search")?.focus());
       return;
     }
     if (
       (e.target as HTMLElement).closest(
-        'input,select,button,canvas,svg,[role="dialog"]',
+        'input,select,button,canvas,svg,[role="dialog"],[role="separator"]',
       )
     )
       return;
@@ -156,289 +173,335 @@ export default function App() {
             expanded && "camera-focused",
           )}
         >
-          <header
-            className="flex h-49 shrink-0 items-center justify-between border-b border-border bg-(--chrome) pr-16 pl-90"
-            data-tauri-drag-region="deep"
+          <ResizablePanelGroup
+            id="workspace"
+            className="min-h-0 flex-1 [.camera-focused_&>[data-separator]]:hidden [.camera-focused_&>#library]:hidden!"
           >
-            <div className="flex items-center gap-14 [&>button]:size-30">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Toggle recording sidebar"
-                aria-pressed={sidebar}
-                onClick={() => setSidebar((v) => !v)}
-              >
-                <PanelLeft size={16} />
-              </Button>
-              <span className="text-[13px] font-[650] tracking-[0.02em]">
-                COMTEC{" "}
-                <b className="ml-3 font-normal text-muted-foreground">Studio</b>
-              </span>
-            </div>
-            <div className="flex items-center gap-12">
-              <DialogTrigger asChild>
-                <Button
-                  id="settings"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Settings"
-                >
-                  <Settings2 size={16} />
-                </Button>
-              </DialogTrigger>
-            </div>
-          </header>
-          <div
-            data-testid="workspace"
-            className={cn(
-              "grid min-h-0 flex-1",
-              sidebar && !expanded
-                ? "grid-cols-[334px_minmax(0,1fr)] max-[1180px]:grid-cols-[290px_minmax(0,1fr)]"
-                : "grid-cols-[minmax(0,1fr)]",
-            )}
-          >
-            {sidebar && (
-              <LibrarySidebar
-                library={library}
-                selected={player.selected}
-                onSelect={selectRecording}
-              />
-            )}
-            <main className="flex min-h-0 min-w-0 flex-col">
-              <div
-                className={cn(
-                  "shrink-0 items-center gap-12 px-18 py-14 max-[1180px]:flex-wrap max-[1180px]:gap-7 max-[1180px]:px-16 max-[1180px]:py-10 [@media(max-height:780px)]:py-8",
-                  expanded ? "hidden" : "flex",
-                )}
-              >
-                <div className="min-w-0 flex-1 max-[1180px]:basis-[calc(100%-40px)]">
-                  <div className="mb-3 text-[9px] tracking-[0.07em] text-muted-foreground">
-                    {label
-                      ? `${label.date} / ${label.session}`
-                      : "YOUR RECORDINGS"}
-                  </div>
-                  <h2
-                    id="clip-title"
-                    className="truncate text-[15px] font-semibold tracking-[-0.025em]"
-                  >
-                    {player.selected?.name ?? "Recordings"}
-                  </h2>
-                  <span className="text-[10px] text-muted-foreground">
-                    {player.selected ? recordingKind(player.selected.name) : ""}
-                  </span>
-                </div>
-                <ToggleGroup
-                  type="single"
-                  value={cameraLayout}
-                  onValueChange={(v) => {
-                    if (!v) return;
-                    setExpanded(null);
-                    setLayout(v as Layout);
-                  }}
-                  spacing={2}
-                  aria-label="Camera layout"
-                  className="max-[1180px]:order-3 rounded-[7px] border border-border bg-secondary p-3"
-                >
-                  {layouts.map((view) => (
-                    <ToggleGroupItem
-                      key={view.value}
-                      value={view.value}
-                      data-layout={view.value}
-                      className="h-auto min-w-0 rounded-[4px] px-7 py-4 text-[11px] font-normal text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-[0_1px_3px_rgb(0_0_0/0.13)]"
-                    >
-                      {view.label}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-                <Button
-                  id="fullscreen"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Toggle fullscreen"
-                  onClick={fullscreen}
-                >
-                  <Maximize size={16} />
-                </Button>
-              </div>
-              {player.error && ready && (
-                <p
-                  className="mx-16 mb-8 rounded-[6px] border border-destructive px-12 py-8 text-[12px] text-destructive"
-                  role="alert"
-                >
-                  {player.error}
-                </p>
+            <ResizablePanel
+              id="library"
+              panelRef={libraryRef}
+              collapsible
+              collapsedSize={0}
+              defaultSize={sidebarWidth}
+              minSize={SIDEBAR_WIDTH.min}
+              maxSize={SIDEBAR_WIDTH.max}
+              groupResizeBehavior="preserve-pixel-size"
+              onResize={({ inPixels }) => {
+                // Camera focus hides this panel with CSS; that is not the user collapsing it.
+                if (expanded) return;
+                setSidebar(inPixels > 0);
+                if (inPixels > 0)
+                  localStorage.setItem(
+                    "comtec.sidebar.v1",
+                    String(Math.round(inPixels)),
+                  );
+              }}
+            >
+              {sidebar && (
+                <LibrarySidebar
+                  library={library}
+                  selected={player.selected}
+                  onSelect={selectRecording}
+                />
               )}
-              <div
-                id="stage"
-                data-layout={cameraLayout}
-                data-testid="stage"
+            </ResizablePanel>
+            <ResizableHandle aria-label="Resize recording sidebar" />
+            <ResizablePanel
+              id="review"
+              minSize={560}
+              className="flex min-w-0 flex-col"
+            >
+              <header
                 className={cn(
-                  "relative mx-16 grid min-h-150 flex-1 gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-700",
-                  arrangement.grid,
-                  expanded && "mt-14",
+                  "flex h-49 shrink-0 items-center justify-between border-b border-border bg-(--chrome) pr-16",
+                  sidebar && !expanded ? "pl-10" : "pl-90",
                 )}
+                data-tauri-drag-region="deep"
               >
-                <CameraView
-                  camera="front"
-                  source={sourceRef}
-                  layout={cameraLayout}
-                  expanded={expanded === "front"}
-                  onExpand={expandCamera}
-                  hidden={arrangement.hide.includes("front")}
-                  className={arrangement.front}
-                />
-                <CameraView
-                  camera="cabin"
-                  source={sourceRef}
-                  layout={cameraLayout}
-                  expanded={expanded === "cabin"}
-                  onExpand={expandCamera}
-                  hidden={arrangement.hide.includes("cabin")}
-                />
-                <CameraPanel
-                  title="Rear camera"
-                  hidden={arrangement.hide.includes("rear")}
-                >
-                  <video
-                    id="rear"
-                    ref={rearRef}
-                    playsInline
-                    muted
-                    crossOrigin="anonymous"
-                    preload="auto"
-                    tabIndex={0}
-                    role="button"
-                    className={cn(
-                      "absolute inset-0 block h-full w-full object-contain focus-visible:ring-3 focus-visible:ring-zinc-400/50 focus-visible:ring-inset focus-visible:outline-none",
-                      expanded === "rear"
-                        ? "cursor-zoom-out"
-                        : "cursor-zoom-in",
-                    )}
-                    aria-label={
-                      expanded === "rear"
-                        ? "Restore camera layout"
-                        : "Expand rear camera"
-                    }
-                    onClick={() => expandCamera("rear")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") expandCamera("rear");
-                    }}
-                  />
-                </CameraPanel>
-                <div
-                  id="empty"
-                  hidden={ready && !player.loading}
-                  className="absolute inset-0 z-2 flex flex-col items-center justify-center bg-radial-[ellipse_at_50%_20%] from-zinc-900 to-zinc-950 to-70% p-20 text-center text-zinc-100"
-                >
-                  <div className="mb-15 rounded-[15px] border border-white/10 bg-white/5 p-15 text-zinc-400 max-[1180px]:hidden">
-                    {player.loading ? (
-                      <LoaderCircle className="animate-spin" size={26} />
-                    ) : (
-                      <Film size={28} />
-                    )}
-                  </div>
-                  <h3 className="text-[20px] font-[550] tracking-[-0.025em] max-[1180px]:text-[17px]">
-                    {player.loading
-                      ? "Opening recording…"
-                      : player.error
-                        ? "Unable to open recording"
-                        : "Select a recording"}
-                  </h3>
-                  <p className="mt-8 mb-18 max-w-340 text-[12px] leading-[1.6] text-zinc-400 max-[1180px]:mt-5 max-[1180px]:mb-10">
-                    {player.error ||
-                      "Choose a session and recording from your library."}
-                  </p>
-                  {!player.loading && !player.selected && (
+                <div className="flex items-center gap-8">
+                  {!expanded && (
                     <Button
-                      onClick={library.open}
-                      className="bg-zinc-100 text-zinc-800 hover:bg-white"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="size-30"
+                      aria-label="Toggle recording sidebar"
+                      aria-pressed={sidebar}
+                      onClick={() =>
+                        sidebar
+                          ? libraryRef.current?.collapse()
+                          : libraryRef.current?.expand()
+                      }
                     >
-                      <FolderOpen size={15} />
-                      Open recordings folder
+                      <PanelLeft size={16} />
                     </Button>
                   )}
+                  <span className="text-[13px] font-semibold">
+                    Comtec Studio
+                  </span>
                 </div>
-              </div>
-              {(showMap || showMotion) && (
-                <>
-                  <div
-                    className={cn(
-                      "focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none h-12 shrink-0 touch-none items-center justify-center cursor-row-resize",
-                      expanded ? "hidden" : "flex",
-                    )}
-                    role="separator"
-                    tabIndex={0}
-                    aria-label="Resize telemetry panel"
-                    aria-orientation="horizontal"
-                    aria-valuemin={180}
-                    aria-valuemax={340}
-                    aria-valuenow={telemetryHeight}
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                        e.preventDefault();
-                        setTelemetryHeight((h) =>
-                          Math.max(
-                            180,
-                            Math.min(340, h + (e.key === "ArrowUp" ? 10 : -10)),
-                          ),
-                        );
+                <DialogTrigger asChild>
+                  <Button
+                    id="settings"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Settings"
+                  >
+                    <Settings2 size={16} />
+                  </Button>
+                </DialogTrigger>
+              </header>
+              <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <div
+                  className={cn(
+                    "shrink-0 items-center gap-12 px-18 py-14 max-[1180px]:flex-wrap max-[1180px]:gap-7 max-[1180px]:px-16 max-[1180px]:py-10 [@media(max-height:780px)]:py-8",
+                    expanded ? "hidden" : "flex",
+                  )}
+                >
+                  <div className="min-w-0 flex-1 max-[1180px]:basis-[calc(100%-40px)]">
+                    <div className="mb-3 text-[9px] tracking-[0.07em] text-muted-foreground">
+                      {label
+                        ? `${label.date} / ${label.session}`
+                        : "YOUR RECORDINGS"}
+                    </div>
+                    <h2
+                      id="clip-title"
+                      className="truncate text-[15px] font-semibold tracking-[-0.025em]"
+                    >
+                      {player.selected?.name ?? "Recordings"}
+                    </h2>
+                    <span className="text-[10px] text-muted-foreground">
+                      {player.selected
+                        ? recordingKind(player.selected.name)
+                        : ""}
+                    </span>
+                  </div>
+                  <ToggleGroup
+                    type="single"
+                    value={cameraLayout}
+                    onValueChange={(v) => {
+                      if (!v) return;
+                      setExpanded(null);
+                      setLayout(v as Layout);
+                    }}
+                    spacing={2}
+                    aria-label="Camera layout"
+                    className="max-[1180px]:order-3 rounded-[7px] border border-border bg-secondary p-3"
+                  >
+                    {layouts.map((view) => (
+                      <ToggleGroupItem
+                        key={view.value}
+                        value={view.value}
+                        data-layout={view.value}
+                        className="h-auto min-w-0 rounded-[4px] px-7 py-4 text-[11px] font-normal text-muted-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-[0_1px_3px_rgb(0_0_0/0.13)]"
+                      >
+                        {view.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                  <Button
+                    id="fullscreen"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Toggle fullscreen"
+                    onClick={fullscreen}
+                  >
+                    <Maximize size={16} />
+                  </Button>
+                </div>
+                {player.error && ready && (
+                  <p
+                    className="mx-16 mb-8 rounded-[6px] border border-destructive px-12 py-8 text-[12px] text-destructive"
+                    role="alert"
+                  >
+                    {player.error}
+                  </p>
+                )}
+                <div
+                  id="stage"
+                  data-layout={cameraLayout}
+                  data-testid="stage"
+                  className={cn(
+                    "relative mx-16 grid min-h-150 flex-1 gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-700",
+                    arrangement.grid,
+                    expanded && "mt-14",
+                  )}
+                >
+                  <CameraView
+                    camera="front"
+                    source={sourceRef}
+                    layout={cameraLayout}
+                    expanded={expanded === "front"}
+                    onExpand={expandCamera}
+                    hidden={arrangement.hide.includes("front")}
+                    className={arrangement.front}
+                  />
+                  <CameraView
+                    camera="cabin"
+                    source={sourceRef}
+                    layout={cameraLayout}
+                    expanded={expanded === "cabin"}
+                    onExpand={expandCamera}
+                    hidden={arrangement.hide.includes("cabin")}
+                  />
+                  <CameraPanel
+                    title="Rear camera"
+                    hidden={arrangement.hide.includes("rear")}
+                  >
+                    <video
+                      id="rear"
+                      ref={rearRef}
+                      playsInline
+                      muted
+                      crossOrigin="anonymous"
+                      preload="auto"
+                      tabIndex={0}
+                      role="button"
+                      className={cn(
+                        "absolute inset-0 block h-full w-full object-contain focus-visible:ring-3 focus-visible:ring-zinc-400/50 focus-visible:ring-inset focus-visible:outline-none",
+                        expanded === "rear"
+                          ? "cursor-zoom-out"
+                          : "cursor-zoom-in",
+                      )}
+                      aria-label={
+                        expanded === "rear"
+                          ? "Restore camera layout"
+                          : "Expand rear camera"
                       }
-                    }}
-                    onPointerDown={(e) => {
-                      drag.current = { y: e.clientY, height: telemetryHeight };
-                      e.currentTarget.setPointerCapture(e.pointerId);
-                    }}
-                    onPointerMove={(e) => {
-                      if (drag.current)
-                        setTelemetryHeight(
-                          Math.max(
-                            180,
-                            Math.min(
-                              340,
-                              drag.current.height + drag.current.y - e.clientY,
-                            ),
-                          ),
-                        );
-                    }}
-                    onPointerUp={() => {
-                      drag.current = null;
-                    }}
-                    onPointerCancel={() => {
-                      drag.current = null;
-                    }}
-                  >
-                    <span className="h-3 w-28 rounded-[2px] bg-border" />
-                  </div>
-                  <div
-                    className={cn(
-                      "mx-16 min-h-180 max-h-[40vh] shrink-0 [@media(max-height:780px)]:max-h-180",
-                      expanded && "hidden",
-                    )}
-                    style={{ height: telemetryHeight }}
-                  >
-                    <TelemetryPanel
-                      data={player.telemetry}
-                      time={player.time}
-                      duration={player.media?.duration ?? 1}
-                      seek={player.jump}
-                      showMap={showMap}
-                      showMotion={showMotion}
-                      onCloseMap={() => setShowMap(false)}
-                      onCloseMotion={() => setShowMotion(false)}
+                      onClick={() => expandCamera("rear")}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") expandCamera("rear");
+                      }}
                     />
+                  </CameraPanel>
+                  <div
+                    id="empty"
+                    hidden={ready && !player.loading}
+                    className="absolute inset-0 z-2 flex flex-col items-center justify-center bg-radial-[ellipse_at_50%_20%] from-zinc-900 to-zinc-950 to-70% p-20 text-center text-zinc-100"
+                  >
+                    <div className="mb-15 rounded-[15px] border border-white/10 bg-white/5 p-15 text-zinc-400 max-[1180px]:hidden">
+                      {player.loading ? (
+                        <LoaderCircle className="animate-spin" size={26} />
+                      ) : (
+                        <Film size={28} />
+                      )}
+                    </div>
+                    <h3 className="text-[20px] font-[550] tracking-[-0.025em] max-[1180px]:text-[17px]">
+                      {player.loading
+                        ? "Opening recording…"
+                        : player.error
+                          ? "Unable to open recording"
+                          : library.clips.length || library.busy
+                            ? "Select a recording"
+                            : "Open your recordings"}
+                    </h3>
+                    <p className="mt-8 mb-18 max-w-340 text-[12px] leading-[1.6] text-zinc-400 max-[1180px]:mt-5 max-[1180px]:mb-10">
+                      {player.error ||
+                        (library.clips.length || library.busy
+                          ? "Choose a session and recording from your library."
+                          : "Choose the folder or SD card that holds your dashcam recordings.")}
+                    </p>
+                    {!player.loading &&
+                      !library.busy &&
+                      !library.clips.length && (
+                        <Button
+                          onClick={library.open}
+                          className="bg-zinc-100 text-zinc-800 hover:bg-white"
+                        >
+                          <FolderOpen size={15} />
+                          Open recordings folder
+                        </Button>
+                      )}
                   </div>
-                </>
-              )}
-              <Transport
-                player={player}
-                adjacent={adjacent}
-                showMap={showMap}
-                showMotion={showMotion}
-                onShowMap={() => setShowMap(true)}
-                onShowMotion={() => setShowMotion(true)}
-              />
-            </main>
-          </div>
+                </div>
+                {(showMap || showMotion) && (
+                  <>
+                    <div
+                      className={cn(
+                        "focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none h-12 shrink-0 touch-none items-center justify-center cursor-row-resize",
+                        expanded ? "hidden" : "flex",
+                      )}
+                      role="separator"
+                      tabIndex={0}
+                      aria-label="Resize telemetry panel"
+                      aria-orientation="horizontal"
+                      aria-valuemin={180}
+                      aria-valuemax={340}
+                      aria-valuenow={telemetryHeight}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setTelemetryHeight((h) =>
+                            Math.max(
+                              180,
+                              Math.min(
+                                340,
+                                h + (e.key === "ArrowUp" ? 10 : -10),
+                              ),
+                            ),
+                          );
+                        }
+                      }}
+                      onPointerDown={(e) => {
+                        drag.current = {
+                          y: e.clientY,
+                          height: telemetryHeight,
+                        };
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        if (drag.current)
+                          setTelemetryHeight(
+                            Math.max(
+                              180,
+                              Math.min(
+                                340,
+                                drag.current.height +
+                                  drag.current.y -
+                                  e.clientY,
+                              ),
+                            ),
+                          );
+                      }}
+                      onPointerUp={() => {
+                        drag.current = null;
+                      }}
+                      onPointerCancel={() => {
+                        drag.current = null;
+                      }}
+                    >
+                      <span className="h-3 w-28 rounded-[2px] bg-border" />
+                    </div>
+                    <div
+                      className={cn(
+                        "mx-16 min-h-180 max-h-[40vh] shrink-0 [@media(max-height:780px)]:max-h-180",
+                        expanded && "hidden",
+                      )}
+                      style={{ height: telemetryHeight }}
+                    >
+                      <TelemetryPanel
+                        data={player.telemetry}
+                        time={player.time}
+                        duration={player.media?.duration ?? 1}
+                        seek={player.jump}
+                        showMap={showMap}
+                        showMotion={showMotion}
+                        onCloseMap={() => setShowMap(false)}
+                        onCloseMotion={() => setShowMotion(false)}
+                      />
+                    </div>
+                  </>
+                )}
+                <Transport
+                  player={player}
+                  adjacent={adjacent}
+                  showMap={showMap}
+                  showMotion={showMotion}
+                  onShowMap={() => setShowMap(true)}
+                  onShowMotion={() => setShowMotion(true)}
+                />
+              </main>
+            </ResizablePanel>
+          </ResizablePanelGroup>
           <video
             id="source"
             ref={sourceRef}
@@ -451,7 +514,7 @@ export default function App() {
             <DialogHeader>
               <DialogTitle>Workspace settings</DialogTitle>
               <DialogDescription>
-                Make COMTEC Studio feel at home.
+                Make Comtec Studio feel at home.
               </DialogDescription>
             </DialogHeader>
             <section className="border-t border-border pt-12">
@@ -500,7 +563,7 @@ export default function App() {
               </dl>
             </section>
             <p className="text-[10px] leading-[1.6] text-muted-foreground">
-              Independent COMTEC viewer · Approximate 240° lens correction
+              Independent Comtec viewer · Approximate 240° lens correction
             </p>
           </DialogContent>
         </div>

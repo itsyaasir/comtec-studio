@@ -1,27 +1,27 @@
-# COMTEC Studio
+# Comtec Studio
 
 A standalone Apple Silicon macOS application for reviewing original two-camera COMTEC recordings. Built from scratch with Tauri v2, React, TypeScript, Rust, and a WebGL fisheye renderer.
 
 ## Open the app
 
-The current branch build is `src-tauri/target/release/bundle/macos/COMTEC Studio.app`. Double-click it to launch. The separately installed `~/Applications/COMTEC Studio.app` remains the earlier release. The original COMTEC Viewer is also preserved.
+The current branch build is `src-tauri/target/release/bundle/macos/Comtec Studio.app`. Double-click it to launch. The separately installed `~/Applications/COMTEC Studio.app` remains the earlier release. The original COMTEC Viewer is also preserved.
 
 The app contains its frontend and Rust media reader. Playback needs no Terminal, Python, Homebrew, separate browser, network connection, or localhost server. The embedded OpenStreetMap street layer uses an internet connection; recorded GPS routes and sensor data remain local. Map tile requests disclose the viewed area and your IP address to OpenStreetMap. The current build is locally ad-hoc signed for Apple Silicon. It is not Developer ID signed or notarized for public distribution. macOS 12+ is the build target; live verification was performed on this Mac only.
 
-Choose **Open recordings folder**, then select a clip. The default first-run location is the user's Documents/Dashcam folder. The app remembers the selected folder. Hidden files, symlinks, and Preview directories are excluded.
+On first run choose **Open recordings folder**, then select a clip. To switch folders later, use the folder button beside the library name at the bottom of the sidebar. The default first-run location is the user's Documents/Dashcam folder. The app remembers the selected folder. Hidden files, symlinks, and Preview directories are excluded.
 
 - Front and cabin are independently adjustable perspectives from the circular video track.
 - Rear uses the second camera track. One controller governs both native decoders, including late playback events and buffering.
 - Playback automatically advances through the library in folder/file order, clearing search/type filters as it advances. The final recording stops; Play replays it.
 - Click a camera to expand it across the window. Click again or press Escape to restore the layout. Drag the front/cabin view to look around; scroll to zoom.
 - Choose All views, Split (front/cabin), Panorama, or Round (original circular image). Click a camera to use Front, Cabin, or Rear alone. Cabin starts upright and includes a 180° rotation button.
-- The folder column groups clips by recording date/session. Select a folder to see its clips, or search across the library. Driving, parking, and event filters use COMTEC file types.
+- The sidebar lists sessions under their recording date, each labelled with its first and last recording time. Select a session to see its clips and select it again to fold it away, or search across the library, which opens every matching session. Search matches the time, date, session and recording type shown in the list as well as file names. Impact, manual, and parking recordings are labelled; a dot marks sessions that contain events. Driving, parking, and event filters use COMTEC file types.
 - The transport strip shows recorded km/h and recording time. Separate panels show a GPS route with a moving position and X/Y/Z acceleration graphs. Click the graph to seek. GPS-unavailable recordings show no invented position or zero speed.
 - Switch between raw acceleration (including gravity) and sample-to-sample changes (Δg). Axis colors follow the original viewer: green forward/backward, red left/right, purple up/down.
 - Space plays or pauses; left/right arrows seek five seconds. Focused camera arrow keys pan instead.
 - F toggles native fullscreen, retaining the transport controls.
 - Settings includes system/light/dark appearance, playback information, and keyboard shortcuts.
-- Toggle the library from the titlebar. Close Map or Acceleration independently using its × button; restore either from the transport strip. Drag the divider above the panels to resize them. ⌘ K focuses search.
+- Drag the sidebar's edge to resize it, or drag it shut. The button beside the app name hides and shows it, and the app remembers its width. With the edge focused, the arrow keys resize it and double-clicking restores the default width. Close Map or Acceleration independently using its × button; restore either from the transport strip. Drag the divider above the panels to resize them. ⌘ K focuses search.
 
 Original footage is opened read-only. Supported recordings play directly through an in-memory camera index, with no prepared video copies. Keep the original drive connected while playing. Unsupported layouts show an error; there is no conversion fallback. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
 
@@ -78,7 +78,7 @@ For the native WKWebView smoke suite:
 
 ```sh
 bun run tauri build --debug
-COMTEC_SMOKE_TEST=1 COMTEC_TEST_ROOT="$HOME/Documents/Dashcam" 'src-tauri/target/debug/bundle/macos/COMTEC Studio.app/Contents/MacOS/comtec-desktop'
+COMTEC_SMOKE_TEST=1 COMTEC_TEST_ROOT="$HOME/Documents/Dashcam" 'src-tauri/target/debug/bundle/macos/Comtec Studio.app/Contents/MacOS/comtec-desktop'
 ```
 
 This explicitly opt-in test operates the debug application's controls using the real fixture names documented in the handoff. Its report is written to `~/Library/Caches/app.comtec.studio/native-smoke.json`. Test hooks are compiled out of release builds. Close the test app normally when finished. Do not operate its controls while the smoke test is running.

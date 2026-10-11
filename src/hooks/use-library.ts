@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { recordingCode, type Recording } from "@/library-model";
+import {
+  recordingCode,
+  recordingSearchText,
+  type Recording,
+} from "@/library-model";
 export function useLibrary(reset: () => void) {
   const [clips, setClips] = useState<Recording[]>([]),
     [root, setRoot] = useState(""),
@@ -56,22 +60,25 @@ export function useLibrary(reset: () => void) {
       active = false;
     };
   }, []);
-  const filtered = useMemo(
-    () =>
-      clips.filter((c) => {
-        const code = recordingCode(c.name);
-        return (
-          (filter === "all" ||
-            (filter === "events"
-              ? ["G", "M", "S"].includes(code)
-              : filter === "P"
-                ? ["P", "S"].includes(code)
-                : code === filter)) &&
-          `${c.name} ${c.folder}`.toLowerCase().includes(query.toLowerCase())
-        );
-      }),
-    [clips, filter, query],
+  const searchText = useMemo(
+    () => new Map(clips.map((c) => [c.id, recordingSearchText(c)])),
+    [clips],
   );
+  const filtered = useMemo(() => {
+    const wanted = query.trim().toLowerCase();
+    return clips.filter((c) => {
+      const code = recordingCode(c.name);
+      return (
+        (filter === "all" ||
+          (filter === "events"
+            ? ["G", "M", "S"].includes(code)
+            : filter === "P"
+              ? ["P", "S"].includes(code)
+              : code === filter)) &&
+        (searchText.get(c.id) ?? "").includes(wanted)
+      );
+    });
+  }, [clips, filter, query, searchText]);
   const groups = useMemo(() => {
     const groups = new Map<string, Recording[]>();
     for (const clip of filtered) {

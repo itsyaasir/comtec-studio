@@ -1,5 +1,17 @@
 # Validation — 15 September 2026
 
+## Comtec Studio rename and library sidebar — 11 October 2026
+
+- The app is now named Comtec Studio in the window title, bundle name, dialogs and messages. The bundle identifier `app.comtec.studio` and the `COMTEC_SMOKE_TEST` / `COMTEC_TEST_ROOT` variables are unchanged, so existing settings and caches carry over.
+- The library sidebar is a single-column tree: date, session (with its time span), then clips. The folder picker moved to the source bar at the bottom of the sidebar; the labelled **Open recordings folder** button appears on the stage only while no library is loaded.
+- The sidebar is now full-height, resizable between 240 and 440px, and collapsible, using shadcn `Resizable` (new dependency `react-resizable-panels`). Its toggle sits beside the app name in the titlebar. The width is remembered; the fixed 334/290px widths are gone.
+- Search also matches the time, date, session and recording type a row displays. A session folds away when selected again. A failed refresh keeps the existing list and reports the error above it.
+- TypeScript, React lint and 10 frontend tests pass, including new tests for session time spans and search text. The native WKWebView smoke suite passed all **88 checks** on the final debug build. Its clip lookups match a `data-name` attribute rather than visible row text, and its sidebar checks now cover hide, restore at the same width, and keyboard resize.
+- An earlier run of the same build failed "last recording stops without wrapping" at check 71. The window had been moved to another Space eight seconds before and the document was hidden; the sidebar checks had already passed. The next run, left visible, passed.
+- The release bundle `Comtec Studio.app` builds, verifies its ad-hoc signature and links only system libraries.
+- The sidebar was reviewed in a Chromium preview with mocked data (light, dark, drag and keyboard resize, collapse, ⌘K reopen, search, no matches, empty library, read error). It has not been looked at by a person in the native window.
+- Original fixture checksums remain unchanged. Installed viewers are not replaced.
+
 ## Tailwind migration complete — 11 October 2026
 
 - `src/style.css` is down to tokens, the base layer and three Leaflet overrides (192 lines). Application layout and focus styling live in utilities beside their components; the hardcoded blue `:focus-visible` outline is gone.

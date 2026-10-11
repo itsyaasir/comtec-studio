@@ -138,7 +138,7 @@ async fn library(
     let media = state.inner().clone();
     let root = if choose {
         let picked = rfd::AsyncFileDialog::new()
-            .set_title("Open COMTEC recordings")
+            .set_title("Open Comtec recordings")
             .pick_folder()
             .await;
         match picked {
@@ -156,7 +156,7 @@ async fn library(
     .await
     .map_err(|e| e.to_string())??;
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_title("COMTEC Studio");
+        let _ = window.set_title("Comtec Studio");
     }
     Ok(Some(result))
 }
@@ -221,7 +221,7 @@ pub fn run() {
             {
                 let _ = webview
                     .window()
-                    .set_title("COMTEC Studio — automated playback checks");
+                    .set_title("Comtec Studio — automated playback checks");
                 let _ = webview.eval(include_str!("../../tests/native-smoke.js"));
             }
         })
@@ -245,7 +245,7 @@ pub fn run() {
         .setup(|app| {
             app.manage(
                 reqwest::Client::builder()
-                    .user_agent("COMTEC-Studio/0.1 (personal macOS recording viewer)")
+                    .user_agent("Comtec-Studio/0.1 (personal macOS recording viewer)")
                     .timeout(std::time::Duration::from_secs(12))
                     .build()?,
             );
@@ -278,7 +278,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("Unable to launch COMTEC Studio")
+        .expect("Unable to launch Comtec Studio")
         .run(|app, event| {
             if matches!(
                 event,

@@ -5,6 +5,7 @@ use std::{
     io::{Read, Seek, SeekFrom},
     path::Path,
 };
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Sample {
@@ -15,11 +16,13 @@ pub struct Sample {
     pub recorded_at: String,
     pub acceleration: [f64; 3],
 }
+
 #[derive(Debug, Serialize)]
 pub struct Telemetry {
     pub samples: Vec<Sample>,
     pub message: Option<String>,
 }
+
 fn field(bytes: &[u8]) -> Option<f64> {
     std::str::from_utf8(bytes)
         .ok()?
@@ -28,6 +31,7 @@ fn field(bytes: &[u8]) -> Option<f64> {
         .ok()
         .filter(|n| n.is_finite())
 }
+
 fn coordinate(bytes: &[u8], hemisphere: u8, latitude: bool) -> Option<f64> {
     let value = field(bytes)?;
     let degrees = (value / 100.).floor();
@@ -44,11 +48,12 @@ fn coordinate(bytes: &[u8], hemisphere: u8, latitude: bool) -> Option<f64> {
     let result = degrees + minutes / 60.;
     (result <= max).then_some(sign * result)
 }
+
 fn parse(bytes: &[u8]) -> Result<Telemetry, String> {
     if !bytes.ends_with(b"CSOEND") {
         return Ok(Telemetry {
             samples: vec![],
-            message: Some("No supported COMTEC telemetry trailer was found.".into()),
+            message: Some("No supported Comtec telemetry trailer was found.".into()),
         });
     }
     let Some(start) = bytes.windows(6).rposition(|b| b == b"CSODAT") else {
@@ -59,7 +64,7 @@ fn parse(bytes: &[u8]) -> Result<Telemetry, String> {
     };
     let data = &bytes[start..];
     if data.len() < 34 || &data[6..12] != b"010001" {
-        return Err("Unsupported COMTEC telemetry version.".into());
+        return Err("Unsupported Comtec telemetry version.".into());
     }
     let mut samples = Vec::new();
     for (index, r) in data[34..].as_chunks::<79>().0.iter().take(3000).enumerate() {
@@ -124,6 +129,7 @@ fn parse(bytes: &[u8]) -> Result<Telemetry, String> {
     };
     Ok(Telemetry { samples, message })
 }
+
 pub fn read(path: &Path) -> Result<Telemetry, String> {
     let mut file = File::open(path).map_err(|e| e.to_string())?;
     let length = file
@@ -137,6 +143,7 @@ pub fn read(path: &Path) -> Result<Telemetry, String> {
     file.read_exact(&mut bytes).map_err(|e| e.to_string())?;
     parse(&bytes)
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

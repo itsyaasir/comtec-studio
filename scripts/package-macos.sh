@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 bun run tauri build
-APP="$PWD/src-tauri/target/release/bundle/macos/COMTEC Studio.app"
+APP="$PWD/src-tauri/target/release/bundle/macos/Comtec Studio.app"
 codesign --force --sign - "$APP"
 codesign --verify --deep --strict "$APP"
 for binary in "$APP/Contents/MacOS/comtec-desktop"; do

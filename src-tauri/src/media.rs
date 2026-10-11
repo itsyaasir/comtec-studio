@@ -60,7 +60,7 @@ impl Media {
     pub fn discover(&self, root: PathBuf) -> Result<Library> {
         let root = root.canonicalize().map_err(io)?;
         if !root.is_dir() {
-            return Err("Choose a folder containing your original COMTEC recordings.".into());
+            return Err("Choose a folder containing your original Comtec recordings.".into());
         }
         let mut clips = Vec::new();
         for entry in WalkDir::new(&root)

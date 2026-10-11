@@ -543,21 +543,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "comtec-desktop"
-version = "0.1.0"
-dependencies = [
- "mp4-atom",
- "reqwest 0.12.28",
- "rfd",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "walkdir",
-]
-
-[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -739,6 +724,21 @@ dependencies = [
  "darling_core",
  "quote",
  "syn 3.0.5",
+]
+
+[[package]]
+name = "dashreel"
+version = "0.1.0"
+dependencies = [
+ "mp4-atom",
+ "reqwest 0.12.28",
+ "rfd",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "walkdir",
 ]
 
 [[package]]

@@ -156,7 +156,7 @@ async fn library(
     .await
     .map_err(|e| e.to_string())??;
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_title("Comtec Studio");
+        let _ = window.set_title("Dashreel");
     }
     Ok(Some(result))
 }
@@ -221,7 +221,7 @@ pub fn run() {
             {
                 let _ = webview
                     .window()
-                    .set_title("Comtec Studio — automated playback checks");
+                    .set_title("Dashreel — automated playback checks");
                 let _ = webview.eval(include_str!("../../tests/native-smoke.js"));
             }
         })
@@ -245,7 +245,7 @@ pub fn run() {
         .setup(|app| {
             app.manage(
                 reqwest::Client::builder()
-                    .user_agent("Comtec-Studio/0.1 (personal macOS recording viewer)")
+                    .user_agent("Dashreel/0.1 (personal macOS recording viewer)")
                     .timeout(std::time::Duration::from_secs(12))
                     .build()?,
             );
@@ -278,7 +278,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("Unable to launch Comtec Studio")
+        .expect("Unable to launch Dashreel")
         .run(|app, event| {
             if matches!(
                 event,

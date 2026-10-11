@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Comtec Studio",
+  "productName": "Dashreel",
   "version": "0.1.0",
-  "identifier": "app.comtec.studio",
+  "identifier": "app.dashreel",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://127.0.0.1:5173",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Comtec Studio",
+        "title": "Dashreel",
         "width": 1440,
         "height": 900,
         "minWidth": 1000,

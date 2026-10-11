@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "comtec-desktop",
+      "name": "dashreel",
       "dependencies": {
         "@tauri-apps/api": "^2.11.1",
         "class-variance-authority": "^0.7.1",

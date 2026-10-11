@@ -1,3 +1,3 @@
 fn main() {
-    comtec_desktop::run();
+    dashreel_lib::run();
 }

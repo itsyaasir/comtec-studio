@@ -429,7 +429,7 @@ mod tests {
     #[test]
     fn reads_across_virtual_header_boundary_and_at_eof() {
         let path =
-            std::env::temp_dir().join(format!("comtec-virtual-range-{}", std::process::id()));
+            std::env::temp_dir().join(format!("dashreel-virtual-range-{}", std::process::id()));
         std::fs::write(&path, b"skippayload").unwrap();
         let t = Track {
             source: Arc::new(File::open(&path).unwrap()),

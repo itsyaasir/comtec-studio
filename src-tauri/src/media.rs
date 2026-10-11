@@ -140,7 +140,7 @@ mod integration {
     }
     #[test]
     fn discovery_excludes_previews_hidden_and_symlinks() {
-        let root = std::env::temp_dir().join(format!("comtec-discovery-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("dashreel-discovery-{}", std::process::id()));
         let input = root.join("originals");
         fs::create_dir_all(input.join("Preview")).unwrap();
         fs::create_dir_all(input.join(".hidden")).unwrap();

@@ -53,12 +53,12 @@ const layouts: { value: Layout; label: string }[] = [
 ];
 type Theme = "system" | "light" | "dark";
 function initialTheme(): Theme {
-  const value = localStorage.getItem("comtec.theme.v1");
+  const value = localStorage.getItem("dashreel.theme.v1");
   return value === "light" || value === "dark" ? value : "system";
 }
 const SIDEBAR_WIDTH = { default: 300, min: 240, max: 440 };
 function initialSidebarWidth(): number {
-  const value = Number(localStorage.getItem("comtec.sidebar.v1"));
+  const value = Number(localStorage.getItem("dashreel.sidebar.v1"));
   return value >= SIDEBAR_WIDTH.min && value <= SIDEBAR_WIDTH.max
     ? value
     : SIDEBAR_WIDTH.default;
@@ -125,7 +125,7 @@ export default function App() {
       );
     apply();
     system.addEventListener("change", apply);
-    localStorage.setItem("comtec.theme.v1", theme);
+    localStorage.setItem("dashreel.theme.v1", theme);
     return () => system.removeEventListener("change", apply);
   }, [theme]);
   const onKey = useEffectEvent((e: KeyboardEvent) => {
@@ -192,7 +192,7 @@ export default function App() {
                 setSidebar(inPixels > 0);
                 if (inPixels > 0)
                   localStorage.setItem(
-                    "comtec.sidebar.v1",
+                    "dashreel.sidebar.v1",
                     String(Math.round(inPixels)),
                   );
               }}
@@ -235,9 +235,7 @@ export default function App() {
                       <PanelLeft size={16} />
                     </Button>
                   )}
-                  <span className="text-[13px] font-semibold">
-                    Comtec Studio
-                  </span>
+                  <span className="text-[13px] font-semibold">Dashreel</span>
                 </div>
                 <DialogTrigger asChild>
                   <Button
@@ -513,9 +511,7 @@ export default function App() {
           <DialogContent className="max-w-440 sm:max-w-440">
             <DialogHeader>
               <DialogTitle>Workspace settings</DialogTitle>
-              <DialogDescription>
-                Make Comtec Studio feel at home.
-              </DialogDescription>
+              <DialogDescription>Make Dashreel feel at home.</DialogDescription>
             </DialogHeader>
             <section className="border-t border-border pt-12">
               <h3 className="mb-10 text-[12px] font-semibold">Appearance</h3>
@@ -563,7 +559,8 @@ export default function App() {
               </dl>
             </section>
             <p className="text-[10px] leading-[1.6] text-muted-foreground">
-              Independent Comtec viewer · Approximate 240° lens correction
+              Independent viewer for Comtec recordings · Approximate 240° lens
+              correction
             </p>
           </DialogContent>
         </div>

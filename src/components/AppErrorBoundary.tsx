@@ -15,7 +15,7 @@ export class AppErrorBoundary extends Component<
       return (
         <main className="m-auto max-w-700 px-40 py-80 select-text" role="alert">
           <h1 className="mb-12 text-[20px] font-semibold">
-            Comtec Studio couldn't open the workspace
+            Dashreel couldn't open the workspace
           </h1>
           <p className="mb-16 text-muted-foreground">
             Your recordings are unchanged. Reload the workspace to try again.

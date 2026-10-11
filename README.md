@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="Comtec Studio icon">
+  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="Dashreel icon">
 </p>
 
-<h1 align="center">Comtec Studio</h1>
+<h1 align="center">Dashreel</h1>
 
 <p align="center">
   A native macOS viewer for COMTEC two-camera dashcam recordings.<br>
   Front, cabin and rear views, the route on a map, and the sensor trace, played straight from the original files.
 </p>
 
-Comtec Studio is an independent project and is not an official COMTEC product.
+Dashreel is an independent project. It is not made by, affiliated with or endorsed by COMTEC.
 
 ## What it does
 
@@ -23,12 +23,12 @@ Comtec Studio is an independent project and is not an official COMTEC product.
 
 ## Install
 
-Comtec Studio runs on Apple Silicon Macs with macOS 12 or later. There is no downloadable release yet, so build it once and copy it to Applications:
+Dashreel runs on Apple Silicon Macs with macOS 12 or later. There is no downloadable release yet, so build it once and copy it to Applications:
 
 ```sh
 bun install --frozen-lockfile
 bun run desktop:build
-cp -R "src-tauri/target/release/bundle/macos/Comtec Studio.app" /Applications/
+cp -R "src-tauri/target/release/bundle/macos/Dashreel.app" /Applications/
 ```
 
 The build is ad-hoc signed for the Mac that built it. It is not Developer ID signed or notarized, so it is not ready to hand to other people. It has been verified live on one Mac only.
@@ -78,7 +78,7 @@ bun install --frozen-lockfile
 bun run desktop:build
 ```
 
-The packaged app is written to `src-tauri/target/release/bundle/macos/Comtec Studio.app`. It uses Rust and system macOS libraries only; `mp4-atom` handles MP4 box decoding and encoding.
+The packaged app is written to `src-tauri/target/release/bundle/macos/Dashreel.app`. It uses Rust and system macOS libraries only; `mp4-atom` handles MP4 box decoding and encoding.
 
 For development, run `bun run tauri dev`. The Vite server it starts is a development convenience and is not part of the packaged app.
 
@@ -120,10 +120,10 @@ For the native WKWebView smoke suite:
 
 ```sh
 bun run tauri build --debug
-COMTEC_SMOKE_TEST=1 COMTEC_TEST_ROOT="$HOME/Documents/Dashcam" 'src-tauri/target/debug/bundle/macos/Comtec Studio.app/Contents/MacOS/comtec-desktop'
+COMTEC_SMOKE_TEST=1 COMTEC_TEST_ROOT="$HOME/Documents/Dashcam" 'src-tauri/target/debug/bundle/macos/Dashreel.app/Contents/MacOS/dashreel'
 ```
 
-This explicitly opt-in test operates the debug application's controls using the real fixture names documented in the handoff. Its report is written to `~/Library/Caches/app.comtec.studio/native-smoke.json`. Test hooks are compiled out of release builds. Close the test app normally when finished. Do not operate its controls while the smoke test is running.
+This explicitly opt-in test operates the debug application's controls using real fixture names. Its report is written to `~/Library/Caches/app.dashreel/native-smoke.json`. Test hooks are compiled out of release builds. Close the test app normally when finished. Do not operate its controls while the smoke test is running.
 
 Native checks cover the 26-recording library, dimensions, paused load, synchronized playback/pause/seek, 2× playback, short-clip completion/replay, audio mute, view reset, and rapid selection.
 

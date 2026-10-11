@@ -114,7 +114,7 @@ export const RouteMap = memo(function RouteMap({ samples, sample }: Props) {
       <div
         ref={container}
         id="route-map"
-        className="h-full"
+        className="h-full focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:ring-inset focus-visible:outline-none [&_a]:focus-visible:ring-3 [&_a]:focus-visible:ring-ring/30 [&_a]:focus-visible:outline-none"
         aria-label="Recorded GPS route"
       />
       <div

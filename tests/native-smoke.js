@@ -36,6 +36,47 @@
       $("count").textContent === "26",
       { count: Number($("count").textContent) },
     );
+    const shell = document.querySelector('[data-testid="desktop-shell"]');
+    const workspace = document.querySelector('[data-testid="workspace"]');
+    const titlebar = shell.querySelector("header");
+    const decoderStyle = getComputedStyle(source());
+    check(
+      "titlebar keeps native traffic-light spacing",
+      titlebar.getBoundingClientRect().height === 49 &&
+        getComputedStyle(titlebar).paddingLeft === "90px",
+    );
+    check(
+      "source decoder remains mounted and invisible",
+      decoderStyle.display !== "none" &&
+        decoderStyle.position === "fixed" &&
+        decoderStyle.opacity === "0" &&
+        source().getBoundingClientRect().width === 1,
+    );
+    check(
+      "range controls retain compact height",
+      getComputedStyle($("seek")).height === "12px" &&
+        getComputedStyle($("volume")).height === "12px" &&
+        getComputedStyle($("front-zoom")).height === "12px",
+    );
+    const sidebarToggle = document.querySelector(
+      '[aria-label="Toggle recording sidebar"]',
+    );
+    sidebarToggle.click();
+    await wait(100);
+    check(
+      "hidden sidebar gives review full width",
+      Math.abs(
+        workspace.querySelector("main").getBoundingClientRect().width -
+          workspace.getBoundingClientRect().width,
+      ) < 1,
+    );
+    sidebarToggle.click();
+    await wait(100);
+    check(
+      "restored sidebar keeps desktop width",
+      workspace.querySelector("aside").getBoundingClientRect().width ===
+        (innerWidth <= 1180 ? 290 : 334),
+    );
     for (const name of [
       "000_023859_A.mp4",
       "000_025643_A.mp4",
@@ -54,7 +95,13 @@
         rear: [rear().videoWidth, rear().videoHeight],
       });
       $("play").click();
-      await wait(1400);
+      await until(
+        () =>
+          source().currentTime > 0.6 &&
+          rear().currentTime > 0.6 &&
+          !source().paused,
+        10000,
+      );
       check(
         name + " plays both tracks",
         source().currentTime > 0.6 &&
@@ -92,7 +139,7 @@
         source().playbackRate === 2 && rear().playbackRate === 2,
       );
       $("play").click();
-      await wait(700);
+      await until(() => source().currentTime > t + 0.5, 10000);
       $("play").click();
       check(name + " 2x playback advances", source().currentTime > t + 0.5);
       $("speed").value = "1";
@@ -284,7 +331,9 @@
       check(
         camera + " uses window width",
         $("stage").getBoundingClientRect().width >
-          document.querySelector(".workspace").getBoundingClientRect().width *
+          document
+            .querySelector('[data-testid="workspace"]')
+            .getBoundingClientRect().width *
             0.95,
       );
       $("play").click();
@@ -373,11 +422,33 @@
       "dark appearance",
       document.documentElement.classList.contains("dark"),
     );
+    const darkChrome = getComputedStyle(titlebar).backgroundColor;
+    const darkStage = getComputedStyle(
+      $("front").closest("article"),
+    ).backgroundColor;
     themes.find((b) => b.textContent === "Light").click();
     await wait(100);
     check(
       "light appearance",
       !document.documentElement.classList.contains("dark"),
+    );
+    check(
+      "chrome changes with appearance",
+      getComputedStyle(titlebar).backgroundColor !== darkChrome,
+    );
+    check(
+      "video workspace stays dark in light mode",
+      getComputedStyle($("front").closest("article")).backgroundColor ===
+        darkStage,
+    );
+    check(
+      "settings retains compact sizing",
+      dialog.offsetWidth === 440 &&
+        getComputedStyle(dialog.querySelector("h3")).fontSize === "12px",
+      {
+        width: dialog.offsetWidth,
+        headingFont: getComputedStyle(dialog.querySelector("h3")).fontSize,
+      },
     );
     originalTheme.click();
     document.dispatchEvent(
@@ -402,6 +473,14 @@
       rearError: rear()?.error?.code,
       mainReady: source()?.readyState,
       rearReady: rear()?.readyState,
+      mainPaused: source()?.paused,
+      rearPaused: rear()?.paused,
+      mainSeeking: source()?.seeking,
+      rearSeeking: rear()?.seeking,
+      mainTime: source()?.currentTime,
+      rearTime: rear()?.currentTime,
+      documentHidden: document.hidden,
+      playLabel: $("play")?.getAttribute("aria-label"),
       mainNetwork: source()?.networkState,
       rearNetwork: rear()?.networkState,
     });

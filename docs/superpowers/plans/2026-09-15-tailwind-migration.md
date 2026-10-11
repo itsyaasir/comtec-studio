@@ -871,7 +871,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: nothing new
 - Produces: nothing consumed by later tasks
 
-- [ ] **Step 1: Read the scattered blocks**
+- [x] **Step 1: Read the scattered blocks**
 
 ```bash
 grep -n '\.desktop-shell\|\.titlebar\|\.workspace\|\.review\|\.app-name\|\.settings-dialog\|\.theme-options\|\.startup-error\|\.playback-error\|\.decoder\|\.eyebrow\|\.recording-' src/style.css
@@ -879,13 +879,13 @@ grep -n '\.desktop-shell\|\.titlebar\|\.workspace\|\.review\|\.app-name\|\.setti
 
 `.titlebar` @ 183 **and** 1174; `.titlebar-left` @ 193 **and** 1177.
 
-- [ ] **Step 2: Convert the shell and titlebar**
+- [x] **Step 2: Convert the shell and titlebar**
 
 `.desktop-shell` → `flex h-full flex-col select-none`. Task 3 already added `data-testid="desktop-shell"` and the `camera-focused` state class — keep both, do not re-add.
 
 `.titlebar` → `flex h-[49px] shrink-0 items-center justify-between border-b border-border bg-[var(--chrome)] pr-4 pl-[82px]`. The 82px left padding clears the macOS traffic lights; keep it. Keep `data-tauri-drag-region="deep"`.
 
-- [ ] **Step 3: Convert workspace and review**
+- [x] **Step 3: Convert workspace and review**
 
 `.workspace` → `grid min-h-0 flex-1 grid-cols-[334px_minmax(0,1fr)] max-[1180px]:grid-cols-[290px_minmax(0,1fr)]` plus `data-testid="workspace"`; the sidebar-hidden state → `grid-cols-[minmax(0,1fr)]`.
 
@@ -908,19 +908,19 @@ Expected: only `.leaflet-container` and `.leaflet-tile`, which are third-party c
 
 `.review` → `flex min-h-0 min-w-0 flex-col`; `.review-heading` → `flex items-center gap-3 px-4 py-3 max-[1180px]:flex-wrap max-[1180px]:gap-[7px] max-[1180px]:px-4 max-[1180px]:py-2.5`.
 
-- [ ] **Step 4: Convert the settings dialog and error boundary**
+- [x] **Step 4: Convert the settings dialog and error boundary**
 
 `.settings-dialog` sections, headings and the `<dl>` grid → utilities. `.startup-error` in `AppErrorBoundary.tsx` → utilities; its bare `<button>` becomes the shadcn `<Button>`.
 
-- [ ] **Step 5: Convert `.decoder`**
+- [x] **Step 5: Convert `.decoder`**
 
 The hidden `<video id="source">` decoder element must stay in the layout but invisible. Keep its current technique exactly (check lines 1023-1031 — if it uses `position:absolute; opacity:0` rather than `display:none`, preserve that; `display:none` on a `<video>` can suspend decoding in WebKit and would break playback).
 
-- [ ] **Step 6: Delete the converted CSS**
+- [x] **Step 6: Delete the converted CSS**
 
 Remove the listed ranges.
 
-- [ ] **Step 7: Verify**
+- [x] **Step 7: Verify**
 
 ```bash
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
@@ -928,7 +928,7 @@ npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts
 
 Then run `tests/native-smoke.js` and confirm playback still works — this is the task that touches the decoder element.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/
@@ -936,6 +936,18 @@ git commit -m "Convert application shell to Tailwind utilities
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
+
+**Execution notes (Task 7):**
+
+- The plan's utility examples predate `--spacing: 1px`, so they were rescaled
+  to keep the rendered pixels: the titlebar is `h-49 pr-16 pl-90`, not the
+  plan's `h-[49px] pr-4 pl-[82px]`. The 90px left padding is what the
+  pre-migration stylesheet used to clear the traffic lights.
+- The hidden decoder keeps its original technique (`fixed`, 1×1px,
+  `opacity-0`, `pointer-events-none`). It is never `display: none`.
+- `AppErrorBoundary` now uses the shadcn `Button`.
+- Committed together with Task 8: both tasks edit the same hunks of
+  `App.tsx` and `style.css`, so one commit covers Steps 8 of both.
 
 ---
 
@@ -948,11 +960,11 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: everything prior
 - Produces: `src/style.css` at ~160 lines
 
-- [ ] **Step 1: Delete the global focus ring**
+- [x] **Step 1: Delete the global focus ring**
 
 Remove the `:focus-visible { outline: 2px solid #5489cf; outline-offset: 2px }` rule at lines 170-173 and the duplicate at 279. This is the inconsistency that motivated the whole migration: `ui/button.tsx` uses `focus-visible:ring-3 focus-visible:ring-ring/30` while every raw control used the hardcoded blue outline.
 
-- [ ] **Step 2: Give every remaining focusable element a token-based ring**
+- [x] **Step 2: Give every remaining focusable element a token-based ring**
 
 ```bash
 grep -rnE '<(input|select|canvas|video|a) ' src/ | grep -v 'focus-visible:'
@@ -960,7 +972,7 @@ grep -rnE '<(input|select|canvas|video|a) ' src/ | grep -v 'focus-visible:'
 
 For each hit, add `focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none`. Elements inside the dark stage (canvas, rear video) should use `focus-visible:ring-zinc-400/50` so the ring is visible against `zinc-950`.
 
-- [ ] **Step 3: Map the remaining Group B leaks**
+- [x] **Step 3: Map the remaining Group B leaks**
 
 ```bash
 grep -nE '#[0-9a-fA-F]{3,8}' src/style.css
@@ -968,7 +980,7 @@ grep -nE '#[0-9a-fA-F]{3,8}' src/style.css
 
 Expected remaining: only the `--selection`, `--selection-text`, `--chrome` and `--stage` token definitions in `:root` / `.dark`. Retire `--stage` if nothing references it (the stage now uses `bg-zinc-950`). Any other hit is an unconverted rule — convert it.
 
-- [ ] **Step 4: Verify the final stylesheet shape**
+- [x] **Step 4: Verify the final stylesheet shape**
 
 ```bash
 wc -l src/style.css
@@ -977,7 +989,7 @@ grep -cE '^\.[a-z]' src/style.css
 
 Expected: ~160 lines; the only remaining top-level class selectors are `.dark` and the three `.leaflet-*` rules. Any `.camera`, `.stage`, `.clip` or `.titlebar` hit means something was missed.
 
-- [ ] **Step 5: Confirm no dead classNames remain in the JSX**
+- [x] **Step 5: Confirm no dead classNames remain in the JSX**
 
 ```bash
 grep -ohE 'className="[a-z][a-z0-9 -]*"' src/**/*.tsx src/*.tsx | sort -u
@@ -985,7 +997,7 @@ grep -ohE 'className="[a-z][a-z0-9 -]*"' src/**/*.tsx src/*.tsx | sort -u
 
 Every remaining value must be a Tailwind utility. A bare semantic name like `className="review"` is a leftover with no rule behind it — remove it.
 
-- [ ] **Step 6: Full verification**
+- [x] **Step 6: Full verification**
 
 ```bash
 npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts && npm run build
@@ -993,7 +1005,7 @@ npx tsc --noEmit && npx eslint src && node --test tests/*.test.ts && npm run bui
 
 Then run `tests/native-smoke.js` end to end. Every assertion must pass.
 
-- [ ] **Step 7: Manual two-theme pass (required)**
+- [ ] **Step 7: Manual two-theme pass (required)** (PARTIAL — checked in a browser preview, not yet in the native window; see execution notes)
 
 The smoke suite asserts behaviour, not appearance, and this migration deliberately folded visual fixes in. Open the app and check in **both** light and dark:
 
@@ -1004,7 +1016,7 @@ The smoke suite asserts behaviour, not appearance, and this migration deliberate
 5. Settings dialog and tooltip open/close animations still play (proves the Task 1 `shadcn` fix)
 6. Resize below 1180px and below 780px height; both breakpoints behave as before
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/
@@ -1017,6 +1029,35 @@ Leaflet overrides.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
+
+**Execution notes (Task 8):**
+
+- `style.css` is 192 lines rather than ~160: tokens, base layer and three
+  Leaflet overrides, with no component rules. The only hex colours left are
+  `--selection`, `--selection-text` and `--chrome`; `--stage` was retired.
+- The only focusable element without a token ring is Leaflet's attribution
+  link, which is third-party markup.
+- Typecheck, lint, all 8 logic tests and the native debug build pass. The
+  native WKWebView smoke suite passed all 87 assertions on four runs,
+  including one with the window deliberately covered. A fifth run failed only
+  the settings-width check described below.
+- An earlier run on this tree timed out waiting for playback on the second
+  fixture. It did not reproduce. The playback code and the Rust track handler
+  are byte-identical to the previous commit, and that run's recording opens
+  were 5–8× slower than normal; the cause is unknown. A debug-only
+  `window.show()` / `set_focus()` hook added while chasing it was removed
+  again because it was never shown to matter. Known gap, unchanged by this
+  migration: `PlaybackSync.reconcile()` awaits `play()` with no timeout.
+- The smoke suite's settings-width check now reads `offsetWidth` instead of
+  `getBoundingClientRect()`. WebKit freezes the dialog's zoom-in animation
+  while the page is hidden, which made the transformed rect read 418px
+  (440 × 0.95) whenever the window was not visible.
+- Step 7 was carried out in a Chromium preview against a mocked backend, in
+  light and dark, at 1440×900 and 1100×740: consistent rings on every enabled
+  tab stop, the stage stays dark in light mode, the dialog's enter animation
+  runs, the sidebar narrows to 290px with no overflow. This session cannot
+  capture the native window, so the same pass in WKWebView is still owed by a
+  human, along with Task 2 Step 10 and Task 3 Step 11.
 
 ---
 

@@ -151,10 +151,16 @@ export default function App() {
       <Dialog open={settings} onOpenChange={setSettings}>
         <div
           data-testid="desktop-shell"
-          className={`desktop-shell ${expanded ? "camera-focused" : ""}`}
+          className={cn(
+            "flex h-full flex-col select-none",
+            expanded && "camera-focused",
+          )}
         >
-          <header className="titlebar" data-tauri-drag-region="deep">
-            <div className="titlebar-left">
+          <header
+            className="flex h-49 shrink-0 items-center justify-between border-b border-border bg-(--chrome) pr-16 pl-90"
+            data-tauri-drag-region="deep"
+          >
+            <div className="flex items-center gap-14 [&>button]:size-30">
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -164,11 +170,12 @@ export default function App() {
               >
                 <PanelLeft size={16} />
               </Button>
-              <span className="app-name">
-                COMTEC <b>Studio</b>
+              <span className="text-[13px] font-[650] tracking-[0.02em]">
+                COMTEC{" "}
+                <b className="ml-3 font-normal text-muted-foreground">Studio</b>
               </span>
             </div>
-            <div className="titlebar-right">
+            <div className="flex items-center gap-12">
               <DialogTrigger asChild>
                 <Button
                   id="settings"
@@ -181,7 +188,15 @@ export default function App() {
               </DialogTrigger>
             </div>
           </header>
-          <div className={`workspace ${sidebar ? "" : "sidebar-hidden"}`}>
+          <div
+            data-testid="workspace"
+            className={cn(
+              "grid min-h-0 flex-1",
+              sidebar && !expanded
+                ? "grid-cols-[334px_minmax(0,1fr)] max-[1180px]:grid-cols-[290px_minmax(0,1fr)]"
+                : "grid-cols-[minmax(0,1fr)]",
+            )}
+          >
             {sidebar && (
               <LibrarySidebar
                 library={library}
@@ -189,18 +204,26 @@ export default function App() {
                 onSelect={selectRecording}
               />
             )}
-            <main className="review">
-              <div className="review-heading">
-                <div className="recording-heading">
-                  <div className="eyebrow">
+            <main className="flex min-h-0 min-w-0 flex-col">
+              <div
+                className={cn(
+                  "shrink-0 items-center gap-12 px-18 py-14 max-[1180px]:flex-wrap max-[1180px]:gap-7 max-[1180px]:px-16 max-[1180px]:py-10 [@media(max-height:780px)]:py-8",
+                  expanded ? "hidden" : "flex",
+                )}
+              >
+                <div className="min-w-0 flex-1 max-[1180px]:basis-[calc(100%-40px)]">
+                  <div className="mb-3 text-[9px] tracking-[0.07em] text-muted-foreground">
                     {label
                       ? `${label.date} / ${label.session}`
                       : "YOUR RECORDINGS"}
                   </div>
-                  <h2 id="clip-title">
+                  <h2
+                    id="clip-title"
+                    className="truncate text-[15px] font-semibold tracking-[-0.025em]"
+                  >
                     {player.selected?.name ?? "Recordings"}
                   </h2>
-                  <span className="recording-kind">
+                  <span className="text-[10px] text-muted-foreground">
                     {player.selected ? recordingKind(player.selected.name) : ""}
                   </span>
                 </div>
@@ -238,7 +261,10 @@ export default function App() {
                 </Button>
               </div>
               {player.error && ready && (
-                <p className="playback-error" role="alert">
+                <p
+                  className="mx-16 mb-8 rounded-[6px] border border-destructive px-12 py-8 text-[12px] text-destructive"
+                  role="alert"
+                >
                   {player.error}
                 </p>
               )}
@@ -283,7 +309,7 @@ export default function App() {
                     tabIndex={0}
                     role="button"
                     className={cn(
-                      "absolute inset-0 block h-full w-full object-contain",
+                      "absolute inset-0 block h-full w-full object-contain focus-visible:ring-3 focus-visible:ring-zinc-400/50 focus-visible:ring-inset focus-visible:outline-none",
                       expanded === "rear"
                         ? "cursor-zoom-out"
                         : "cursor-zoom-in",
@@ -337,7 +363,7 @@ export default function App() {
                 <>
                   <div
                     className={cn(
-                      "h-12 shrink-0 touch-none items-center justify-center cursor-row-resize",
+                      "focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none h-12 shrink-0 touch-none items-center justify-center cursor-row-resize",
                       expanded ? "hidden" : "flex",
                     )}
                     role="separator"
@@ -416,21 +442,21 @@ export default function App() {
           <video
             id="source"
             ref={sourceRef}
-            className="decoder"
+            className="pointer-events-none fixed bottom-0 left-0 h-1 w-1 opacity-0"
             playsInline
             crossOrigin="anonymous"
             preload="auto"
           />
-          <DialogContent className="settings-dialog">
+          <DialogContent className="max-w-440 sm:max-w-440">
             <DialogHeader>
               <DialogTitle>Workspace settings</DialogTitle>
               <DialogDescription>
                 Make COMTEC Studio feel at home.
               </DialogDescription>
             </DialogHeader>
-            <section>
-              <h3>Appearance</h3>
-              <div className="theme-options">
+            <section className="border-t border-border pt-12">
+              <h3 className="mb-10 text-[12px] font-semibold">Appearance</h3>
+              <div className="flex gap-8">
                 {(
                   [
                     { value: "system", label: "System", Icon: Monitor },
@@ -440,6 +466,7 @@ export default function App() {
                 ).map(({ value, label, Icon }) => (
                   <Button
                     key={value}
+                    className="flex-1"
                     variant={theme === value ? "secondary" : "outline"}
                     aria-pressed={theme === value}
                     onClick={() => setTheme(value)}
@@ -450,27 +477,29 @@ export default function App() {
                 ))}
               </div>
             </section>
-            <section>
-              <h3>Playback</h3>
-              <p>
+            <section className="border-t border-border pt-12">
+              <h3 className="mb-10 text-[12px] font-semibold">Playback</h3>
+              <p className="text-[12px] leading-[1.6] text-muted-foreground">
                 Recordings play directly from the original files. Keep the
                 recording drive connected while watching.
               </p>
             </section>
-            <section>
-              <h3>Keyboard shortcuts</h3>
-              <dl>
+            <section className="border-t border-border pt-12">
+              <h3 className="mb-10 text-[12px] font-semibold">
+                Keyboard shortcuts
+              </h3>
+              <dl className="grid grid-cols-[1fr_auto] gap-9 text-[12px]">
                 <dt>Play or pause</dt>
-                <dd>Space</dd>
+                <dd className="text-muted-foreground">Space</dd>
                 <dt>Seek five seconds</dt>
-                <dd>← / →</dd>
+                <dd className="text-muted-foreground">← / →</dd>
                 <dt>Search recordings</dt>
-                <dd>⌘ K</dd>
+                <dd className="text-muted-foreground">⌘ K</dd>
                 <dt>Fullscreen</dt>
-                <dd>F</dd>
+                <dd className="text-muted-foreground">F</dd>
               </dl>
             </section>
-            <p className="about">
+            <p className="text-[10px] leading-[1.6] text-muted-foreground">
               Independent COMTEC viewer · Approximate 240° lens correction
             </p>
           </DialogContent>

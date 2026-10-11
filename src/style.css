@@ -56,6 +56,10 @@
 }
 
 :root {
+  --selection: #e2edfc;
+  --selection-text: #24568b;
+  --chrome: #f5f5f7;
+  color-scheme: light;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -91,6 +95,10 @@
 }
 
 .dark {
+  --selection: #263c55;
+  --selection-text: #a8cff9;
+  --chrome: #242426;
+  color-scheme: dark;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -134,137 +142,42 @@
   html {
     @apply font-sans;
   }
-}
-/* The application chrome uses macOS system typography and compact desktop spacing. */
-:root {
-  --selection: #e2edfc;
-  --selection-text: #24568b;
-  --chrome: #f5f5f7;
-  --stage: #111317;
-  color-scheme: light;
-}
-.dark {
-  --selection: #263c55;
-  --selection-text: #a8cff9;
-  --chrome: #242426;
-  --stage: #101113;
-  color-scheme: dark;
-}
-html,
-body,
-#app {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-  font-size: 13px;
-}
-button,
-input,
-select {
-  font: inherit;
-}
-button {
-  cursor: default;
-}
-button:disabled {
-  cursor: default;
-}
-button,
-input,
-select {
-  -webkit-app-region: no-drag;
-}
-:focus-visible {
-  outline: 2px solid #5489cf;
-  outline-offset: 2px;
-}
-[hidden] {
-  display: none !important;
-}
-.desktop-shell {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  user-select: none;
-}
-.titlebar {
-  height: 49px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px 0 82px;
-  background: var(--chrome);
-  border-bottom: 1px solid var(--border);
-}
-.titlebar-left,
-.titlebar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.app-name {
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-}
-.app-name b {
-  font-weight: 400;
-  color: var(--muted-foreground);
-  margin-left: 3px;
-}
-.titlebar-caption {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  pointer-events: none;
-}
-.workspace {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 334px minmax(0, 1fr);
-}
-.workspace.sidebar-hidden {
-  grid-template-columns: minmax(0, 1fr);
-}
-.review {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
-.review-heading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  flex-shrink: 0;
-}
-.recording-heading {
-  flex: 1;
-  min-width: 0;
-}
-.eyebrow {
-  font-size: 9px;
-  letter-spacing: 0.07em;
-  color: var(--muted-foreground);
-  margin-bottom: 3px;
-}
-.recording-heading h2 {
-  font-size: 15px;
-  letter-spacing: -0.025em;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.recording-kind {
-  font-size: 10px;
-  color: var(--muted-foreground);
+  html,
+  body,
+  #app {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+  button {
+    cursor: default;
+  }
+  button:disabled {
+    cursor: default;
+  }
+  button,
+  input,
+  select {
+    -webkit-app-region: no-drag;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 .leaflet-container {
   font-family: inherit;
@@ -276,144 +189,4 @@ select {
 .leaflet-control-zoom {
   transform: scale(0.7);
   transform-origin: bottomright;
-}
-input[type="range"] {
-  height: 12px;
-  cursor: pointer;
-}
-.review-footer {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 18px 7px;
-  font-size: 9px;
-  color: var(--muted-foreground);
-}
-.decoder {
-  position: fixed;
-  width: 1px;
-  height: 1px;
-  left: 0;
-  bottom: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-.settings-dialog {
-  max-width: 440px;
-}
-.settings-dialog section {
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-.settings-dialog h3 {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-.settings-dialog p {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--muted-foreground);
-}
-.theme-options {
-  display: flex;
-  gap: 8px;
-}
-.theme-options button {
-  flex: 1;
-}
-.settings-dialog dl {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 9px;
-  font-size: 12px;
-}
-.settings-dialog dd {
-  color: var(--muted-foreground);
-}
-.settings-dialog .about {
-  font-size: 10px;
-}
-@media (max-width: 1180px) {
-  .workspace {
-    grid-template-columns: 290px minmax(0, 1fr);
-  }
-  .review-heading {
-    flex-wrap: wrap;
-    gap: 7px;
-    padding: 10px 16px;
-  }
-  .recording-heading {
-    flex-basis: calc(100% - 40px);
-  }
-}
-@media (max-height: 780px) {
-  .review-heading {
-    padding-top: 8px;
-    padding-bottom: 8px;
-  }
-  .review-footer {
-    display: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-.playback-error {
-  margin: 0 16px 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--destructive);
-  color: var(--destructive);
-  border-radius: 6px;
-  font-size: 12px;
-}
-.startup-error {
-  padding: 80px 40px;
-  max-width: 700px;
-  margin: auto;
-  user-select: text;
-}
-.startup-error h1 {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-.startup-error p {
-  color: var(--muted-foreground);
-  margin-bottom: 16px;
-}
-.startup-error button {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  padding: 8px 14px;
-  border-radius: 7px;
-}
-.startup-error details {
-  margin-top: 20px;
-  font-size: 12px;
-}
-.startup-error pre {
-  white-space: pre-wrap;
-  margin-top: 8px;
-}
-/* Shared 49px titlebar baseline, including the native traffic lights. */
-.titlebar {
-  padding-left: 90px;
-}
-.titlebar-left {
-  gap: 14px;
-}
-.titlebar-left > button {
-  width: 30px;
-  height: 30px;
-}
-.camera-focused .workspace {
-  grid-template-columns: minmax(0, 1fr);
-}
-.camera-focused .review-heading {
-  display: none;
 }

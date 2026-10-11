@@ -113,7 +113,7 @@ export const TelemetryPanel = memo(function TelemetryPanel({
               </span>
               <select
                 id="sensor-mode"
-                className="ml-auto max-w-190 rounded-[4px] border border-border bg-secondary px-3 py-2 text-[9px]"
+                className="focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none ml-auto max-w-190 rounded-[4px] border border-border bg-secondary px-3 py-2 text-[9px]"
                 aria-label="G-sensor display"
                 value={raw ? "raw" : "change"}
                 onChange={(e) => setRaw(e.target.value === "raw")}
@@ -140,7 +140,7 @@ export const TelemetryPanel = memo(function TelemetryPanel({
                 >
                   <input
                     type="checkbox"
-                    className="size-9 accent-current"
+                    className="focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none size-9 accent-current"
                     checked={enabled[i]}
                     onChange={(e) =>
                       setEnabled((v) =>
@@ -164,7 +164,7 @@ export const TelemetryPanel = memo(function TelemetryPanel({
             </div>
             <svg
               id="sensor-graph"
-              className="min-h-25 w-full flex-1 cursor-crosshair"
+              className="focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none min-h-25 w-full flex-1 cursor-crosshair"
               viewBox="0 0 1000 130"
               preserveAspectRatio="none"
               role="img"

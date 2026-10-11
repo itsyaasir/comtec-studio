@@ -14,7 +14,7 @@ Choose **Open recordings folder**, then select a clip. The default first-run loc
 - Rear uses the second camera track. One controller governs both native decoders, including late playback events and buffering.
 - Playback automatically advances through the library in folder/file order, clearing search/type filters as it advances. The final recording stops; Play replays it.
 - Click a camera to expand it across the window. Click again or press Escape to restore the layout. Drag the front/cabin view to look around; scroll to zoom.
-- Choose All views, Front, Split (front/cabin), Panorama, Round (original circular image), Cabin, or Rear. Cabin starts upright and includes a 180° rotation button.
+- Choose All views, Split (front/cabin), Panorama, or Round (original circular image). Click a camera to use Front, Cabin, or Rear alone. Cabin starts upright and includes a 180° rotation button.
 - The folder column groups clips by recording date/session. Select a folder to see its clips, or search across the library. Driving, parking, and event filters use COMTEC file types.
 - The transport strip shows recorded km/h and recording time. Separate panels show a GPS route with a moving position and X/Y/Z acceleration graphs. Click the graph to seek. GPS-unavailable recordings show no invented position or zero speed.
 - Switch between raw acceleration (including gravity) and sample-to-sample changes (Δg). Axis colors follow the original viewer: green forward/backward, red left/right, purple up/down.

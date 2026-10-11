@@ -19,7 +19,7 @@ React state drives controls. Fast-changing media and renderer values live in ref
 
 React StrictMode remains enabled in development. ESLint enforces the recommended React Hooks rules, including dependencies, refs, and effect state updates; no rules are disabled. There is no extra global state library or server framework. The settings dialog uses Radix focus management and Escape handling, and controls have accessible labels and keyboard operations.
 
-`src/style.css` contains the Luma tokens and application layout. Build-time shadcn tooling is a development dependency. The packaged app contains local assets and requires no frontend server.
+`src/style.css` contains the Luma tokens, global base rules, and three Leaflet overrides. Application layout and keyboard focus styles live in Tailwind utilities beside their components. `cn` and `shadcn` are runtime dependencies because the application imports their class helper and CSS. The packaged app contains local assets and requires no frontend server.
 
 ## Guidance consulted
 

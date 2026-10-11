@@ -47,7 +47,7 @@ export function Transport({
         </span>
         <input
           id="seek"
-          className="min-w-0 flex-1 accent-primary"
+          className="h-12 min-w-0 flex-1 cursor-pointer accent-primary focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none"
           aria-label="Playback position"
           type="range"
           min={p.media?.start ?? 0}
@@ -157,7 +157,7 @@ export function Transport({
           </Button>
           <select
             id="speed"
-            className="ml-8 bg-transparent p-3 text-[11px] text-muted-foreground"
+            className="focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none ml-8 bg-transparent p-3 text-[11px] text-muted-foreground"
             aria-label="Playback speed"
             value={p.rate}
             onChange={(e) => p.setRate(Number(e.target.value))}
@@ -202,7 +202,7 @@ export function Transport({
           </Button>
           <input
             id="volume"
-            className="w-75 accent-primary max-[1180px]:w-50"
+            className="h-12 w-75 cursor-pointer accent-primary max-[1180px]:w-50 focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none"
             aria-label="Volume"
             type="range"
             min="0"

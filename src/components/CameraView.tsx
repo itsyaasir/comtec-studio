@@ -71,7 +71,7 @@ export const CameraView = memo(function CameraView({
       <Button
         variant="ghost"
         size="icon-sm"
-        className="size-24 rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-white [&_svg:not([class*='size-'])]:size-12"
+        className="size-24 rounded-md text-zinc-400 focus-visible:border-zinc-400 focus-visible:ring-zinc-400/50 hover:bg-zinc-800 hover:text-white [&_svg:not([class*='size-'])]:size-12"
         aria-label={
           expanded ? "Restore camera layout" : `Expand ${camera} camera`
         }
@@ -83,7 +83,7 @@ export const CameraView = memo(function CameraView({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="size-24 rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-white [&_svg:not([class*='size-'])]:size-12"
+          className="size-24 rounded-md text-zinc-400 focus-visible:border-zinc-400 focus-visible:ring-zinc-400/50 hover:bg-zinc-800 hover:text-white [&_svg:not([class*='size-'])]:size-12"
           id="cabin-rotate"
           aria-label="Rotate cabin 180 degrees"
           onClick={() => {
@@ -99,7 +99,7 @@ export const CameraView = memo(function CameraView({
       <Button
         variant="ghost"
         size="icon-sm"
-        className="size-24 rounded-md text-zinc-400 hover:bg-zinc-800 hover:text-white [&_svg:not([class*='size-'])]:size-12"
+        className="size-24 rounded-md text-zinc-400 focus-visible:border-zinc-400 focus-visible:ring-zinc-400/50 hover:bg-zinc-800 hover:text-white [&_svg:not([class*='size-'])]:size-12"
         id={`${camera}-reset`}
         aria-label={`Reset ${camera} view`}
         onClick={() => lens.current?.reset()}
@@ -124,7 +124,7 @@ export const CameraView = memo(function CameraView({
               type="range"
               min="35"
               max="130"
-              className="w-75 accent-primary"
+              className="h-12 w-75 cursor-pointer accent-zinc-100 focus-visible:ring-3 focus-visible:ring-zinc-400/50 focus-visible:ring-inset focus-visible:outline-none"
               value={fov}
               onInput={(e) => {
                 if (lens.current) {
@@ -140,7 +140,7 @@ export const CameraView = memo(function CameraView({
       <canvas
         id={camera}
         ref={canvas}
-        className="absolute inset-0 block h-full w-full cursor-grab touch-none object-contain active:cursor-grabbing"
+        className="absolute inset-0 block h-full w-full cursor-grab touch-none object-contain active:cursor-grabbing focus-visible:ring-3 focus-visible:ring-zinc-400/50 focus-visible:ring-inset focus-visible:outline-none"
         tabIndex={0}
         role="button"
         aria-label={`${camera} camera. Click or press Enter to expand. Drag to look, scroll to zoom.`}

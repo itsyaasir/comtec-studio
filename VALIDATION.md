@@ -1,5 +1,15 @@
 # Validation — 15 September 2026
 
+## Tailwind migration complete — 11 October 2026
+
+- `src/style.css` is down to tokens, the base layer and three Leaflet overrides (192 lines). Application layout and focus styling live in utilities beside their components; the hardcoded blue `:focus-visible` outline is gone.
+- TypeScript, React lint, all 8 frontend tests and the native debug build pass.
+- The native WKWebView smoke suite passed all **87 checks** on four runs against the real recordings: window in front, window covered by another app, a fresh build, and the final tree.
+- One earlier run timed out waiting for playback on the second fixture, with recording opens 5–8× slower than usual. It was not reproduced and its cause is unknown. The playback controller and Rust track handler are unchanged from the previous commit. `PlaybackSync.reconcile()` still awaits `play()` without a timeout; that predates this work.
+- A further run failed only the settings-width check, because the user switched apps mid-run and WebKit froze the dialog's zoom animation at 95%. The check now reads layout width, which a paused animation cannot change.
+- Appearance was reviewed in a Chromium preview with a mocked backend, in light and dark, at 1440×900 and 1100×740. That is not the native window: a human pass in WKWebView is still owed, as are the two earlier manual steps in the migration plan (toggle-group accessibility, Lens remount).
+- Original fixture checksums remain unchanged. Installed viewers are not replaced.
+
 ## Playback controls and workspace refinements
 
 - All **81 native checks** pass with the real recordings, including rapid play/pause, pause during seeking, autoplay within/across sessions, final-recording stop/replay, stale completion events, and six repeated recording loads.

@@ -3,7 +3,7 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 const sidebarRowVariants = cva(
-  "flex w-full items-center gap-7 rounded-[6px] text-left transition-colors hover:bg-muted aria-[current=true]:bg-secondary",
+  "focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none flex w-full items-center gap-7 rounded-[6px] text-left transition-colors hover:bg-muted aria-[current=true]:bg-secondary",
   {
     variants: {
       variant: {

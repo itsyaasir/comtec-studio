@@ -4,7 +4,6 @@ This folder archives the original Python/browser viewer and migration references
 
 - `browser-viewer/`: exact copies of the installed original viewer source, recovered after the initial rebuild removed the project-local copies.
 - `HANDOFF.md`: historical migration handoff.
-- `reference-screenshots/`: user-supplied screenshots of the original COMTEC interface (ignored by Git).
 
 The archived launchers are copies of the installed launchers and may reference the installed viewer's location. They are retained for reference.
 

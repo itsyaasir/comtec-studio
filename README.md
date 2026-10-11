@@ -102,7 +102,7 @@ Built with Tauri 2, React 19, TypeScript, Tailwind 4, shadcn components, Rust, a
 
 Rust only accepts IDs from its discovered library. The in-process `track:` protocol exposes the active recording's camera views and checks original-file identity on each request. Tauri's asset protocol is scoped only to cached map tiles. The webview cannot read arbitrary paths or run arbitrary commands. Production CSP prevents remote scripts and frontend network API calls. Rust fetches only validated tile coordinates from the fixed OpenStreetMap tile host. No recording is uploaded. See [DIRECT_PLAYBACK.md](DIRECT_PLAYBACK.md) for the format boundary and validation.
 
-The original Python/browser source is archived in [`legacy/browser-viewer/`](legacy/browser-viewer/), with the historical handoff and reference screenshots under [`legacy/`](legacy/README.md). These files are not used by the Tauri build. The original installed viewer remains untouched.
+The original Python/browser source is archived in [`legacy/browser-viewer/`](legacy/browser-viewer/), with the historical handoff under [`legacy/`](legacy/README.md). These files are not used by the Tauri build. The original installed viewer remains untouched.
 
 See [REACT_UI.md](REACT_UI.md) for React architecture and the skills/docs used.
 
@@ -134,3 +134,7 @@ Native checks cover the 26-recording library, dimensions, paused load, synchroni
 ## Media notes
 
 The 240° lens model and default view angles are empirical; correction is approximate. Export is outside this version. Supported originals contain two H.264 video streams and optional AAC audio. Playback preserves the original encoded video and audio. Preallocated source file size does not indicate clip duration.
+
+## License
+
+Released under the [MIT License](LICENSE).

@@ -72,9 +72,10 @@ export const TelemetryPanel = memo(function TelemetryPanel({
         )}
       >
         {showMap && (
+          // Isolated so the map's high z-indexes (Leaflet's and ours) cannot rise above dialogs.
           <div
             className={cn(
-              "relative min-h-0",
+              "relative isolate min-h-0",
               showMotion && "border-r border-border",
             )}
           >

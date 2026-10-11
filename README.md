@@ -1,42 +1,88 @@
-# Comtec Studio
+<p align="center">
+  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="Comtec Studio icon">
+</p>
 
-A standalone Apple Silicon macOS application for reviewing original two-camera COMTEC recordings. Built from scratch with Tauri v2, React, TypeScript, Rust, and a WebGL fisheye renderer.
+<h1 align="center">Comtec Studio</h1>
 
-## Open the app
+<p align="center">
+  A native macOS viewer for COMTEC two-camera dashcam recordings.<br>
+  Front, cabin and rear views, the route on a map, and the sensor trace, played straight from the original files.
+</p>
 
-The current branch build is `src-tauri/target/release/bundle/macos/Comtec Studio.app`. Double-click it to launch. The separately installed `~/Applications/COMTEC Studio.app` remains the earlier release. The original COMTEC Viewer is also preserved.
+Comtec Studio is an independent project and is not an official COMTEC product.
 
-The app contains its frontend and Rust media reader. Playback needs no Terminal, Python, Homebrew, separate browser, network connection, or localhost server. The embedded OpenStreetMap street layer uses an internet connection; recorded GPS routes and sensor data remain local. Map tile requests disclose the viewed area and your IP address to OpenStreetMap. The current build is locally ad-hoc signed for Apple Silicon. It is not Developer ID signed or notarized for public distribution. macOS 12+ is the build target; live verification was performed on this Mac only.
+## What it does
 
-On first run choose **Open recordings folder**, then select a clip. To switch folders later, use the folder button beside the library name at the bottom of the sidebar. The default first-run location is the user's Documents/Dashcam folder. The app remembers the selected folder. Hidden files, symlinks, and Preview directories are excluded.
+- **Three views from two cameras.** The 360° front camera is unwrapped into separate front and cabin perspectives you can drag to look around and scroll to zoom. The rear camera plays alongside, kept in step by a single playback controller.
+- **Seven layouts.** All views, Split, Panorama, Round (the original circular image), or any one camera on its own. Click a camera to fill the window; press Escape to go back.
+- **A library that reads like a trip log.** Recordings are grouped by date and session, each session labelled with its first and last recording time. Impact, manual and parking recordings are marked. Search by time, date, session, type or file name, or filter to driving, parking or events.
+- **Where and how the car was moving.** Recorded speed, a GPS route with a moving position, and X/Y/Z acceleration graphs you can click to seek. Recordings without GPS show no invented position or speed.
+- **Continuous playback.** Playback moves on to the next recording, across sessions, and stops at the last one.
+- **Your originals stay untouched.** Footage is opened read-only and played directly, with no converted copies and no FFmpeg.
+- **At home on the Mac.** Native window controls, light, dark and system appearance, a resizable and collapsible sidebar, and fullscreen.
 
-- Front and cabin are independently adjustable perspectives from the circular video track.
-- Rear uses the second camera track. One controller governs both native decoders, including late playback events and buffering.
-- Playback automatically advances through the library in folder/file order, clearing search/type filters as it advances. The final recording stops; Play replays it.
-- Click a camera to expand it across the window. Click again or press Escape to restore the layout. Drag the front/cabin view to look around; scroll to zoom.
-- Choose All views, Split (front/cabin), Panorama, or Round (original circular image). Click a camera to use Front, Cabin, or Rear alone. Cabin starts upright and includes a 180° rotation button.
-- The sidebar lists sessions under their recording date, each labelled with its first and last recording time. Select a session to see its clips and select it again to fold it away, or search across the library, which opens every matching session. Search matches the time, date, session and recording type shown in the list as well as file names. Impact, manual, and parking recordings are labelled; a dot marks sessions that contain events. Driving, parking, and event filters use COMTEC file types.
-- The transport strip shows recorded km/h and recording time. Separate panels show a GPS route with a moving position and X/Y/Z acceleration graphs. Click the graph to seek. GPS-unavailable recordings show no invented position or zero speed.
-- Switch between raw acceleration (including gravity) and sample-to-sample changes (Δg). Axis colors follow the original viewer: green forward/backward, red left/right, purple up/down.
-- Space plays or pauses; left/right arrows seek five seconds. Focused camera arrow keys pan instead.
-- F toggles native fullscreen, retaining the transport controls.
-- Settings includes system/light/dark appearance, playback information, and keyboard shortcuts.
-- Drag the sidebar's edge to resize it, or drag it shut. The button beside the app name hides and shows it, and the app remembers its width. With the edge focused, the arrow keys resize it and double-clicking restores the default width. Close Map or Acceleration independently using its × button; restore either from the transport strip. Drag the divider above the panels to resize them. ⌘ K focuses search.
+## Install
 
-Original footage is opened read-only. Supported recordings play directly through an in-memory camera index, with no prepared video copies. Keep the original drive connected while playing. Unsupported layouts show an error; there is no conversion fallback. The selected folder is stored in the app's configuration directory. No recording or private image is bundled or committed.
+Comtec Studio runs on Apple Silicon Macs with macOS 12 or later. There is no downloadable release yet, so build it once and copy it to Applications:
 
-## Build
+```sh
+bun install --frozen-lockfile
+bun run desktop:build
+cp -R "src-tauri/target/release/bundle/macos/Comtec Studio.app" /Applications/
+```
 
-Requires an Apple Silicon Mac, Xcode command-line tools, Rust, Bun, and an internet connection for the initial dependency/source downloads.
+The build is ad-hoc signed for the Mac that built it. It is not Developer ID signed or notarized, so it is not ready to hand to other people. It has been verified live on one Mac only.
+
+## Using it
+
+On first launch choose **Open recordings folder** and pick the folder or SD card that holds your recordings (the default is `~/Documents/Dashcam`). The app remembers the folder. To switch later, use the folder button beside the library name at the bottom of the sidebar. Hidden files, symlinks and `Preview` directories are skipped.
+
+Keep the drive connected while playing: recordings are read from where they are.
+
+| Action                    | How                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| Play or pause             | Space                                                                           |
+| Seek five seconds         | ← and →                                                                         |
+| Fullscreen                | F                                                                               |
+| Search the library        | ⌘K                                                                              |
+| Expand a camera           | Click it; Escape restores the layout                                            |
+| Look around, zoom         | Drag and scroll on the front or cabin view                                      |
+| Pan a focused camera      | Arrow keys                                                                      |
+| Resize the sidebar        | Drag its edge, or focus the edge and use the arrow keys; double-click resets it |
+| Hide or show the sidebar  | The button beside the app name, or drag the edge shut                           |
+| Fold a session away       | Select the open session again                                                   |
+| Close Map or Acceleration | Its × button; restore from the transport strip                                  |
+| Resize the panels         | Drag the divider above them                                                     |
+
+Other details:
+
+- Cabin starts upright and has a 180° rotation button.
+- The acceleration graph switches between raw values (including gravity) and sample-to-sample change (Δg). Axis colours follow the original viewer: green forward/back, red left/right, purple up/down.
+- Settings holds appearance, playback information and the shortcut list.
+- Recordings in an unsupported layout show an error. There is no conversion fallback.
+
+## Privacy
+
+Recordings never leave your Mac. Playback needs no network connection, server or helper process.
+
+The map is the one exception: street tiles come from OpenStreetMap, so viewing a route tells OpenStreetMap which area you are looking at and your IP address. Routes and sensor data themselves stay local. Tiles are cached for seven days.
+
+The selected folder is stored in the app's configuration directory. No recording or private image is bundled with the app or committed to this repository.
+
+## Build from source
+
+Requires an Apple Silicon Mac, Xcode command-line tools, Rust, Bun, and an internet connection for the first dependency download.
 
 ```sh
 bun install --frozen-lockfile
 bun run desktop:build
 ```
 
-The package uses Rust and system macOS libraries, with no FFmpeg or FFprobe executables. `mp4-atom` handles standard MP4 box decoding and encoding.
+The packaged app is written to `src-tauri/target/release/bundle/macos/Comtec Studio.app`. It uses Rust and system macOS libraries only; `mp4-atom` handles MP4 box decoding and encoding.
 
-The debug development loop is `bun run tauri dev`. Its Vite development server is a build-time convenience and is not part of the packaged application.
+For development, run `bun run tauri dev`. The Vite server it starts is a development convenience and is not part of the packaged app.
+
+Built with Tauri 2, React 19, TypeScript, Tailwind 4, shadcn components, Rust, and a WebGL fisheye renderer.
 
 ## Architecture
 
@@ -87,4 +133,4 @@ Native checks cover the 26-recording library, dimensions, paused load, synchroni
 
 ## Media notes
 
-This is an independent viewer, not an official COMTEC product. The 240° lens model and default view angles are empirical; correction is approximate. Export is outside this version. Supported originals contain two H.264 video streams and optional AAC audio. Playback preserves the original encoded video and audio. Preallocated source file size does not indicate clip duration.
+The 240° lens model and default view angles are empirical; correction is approximate. Export is outside this version. Supported originals contain two H.264 video streams and optional AAC audio. Playback preserves the original encoded video and audio. Preallocated source file size does not indicate clip duration.

@@ -447,7 +447,7 @@ mod tests {
     #[ignore = "requires explicitly selected real recordings"]
     fn real_recordings_use_small_indexes_and_unchanged_source_bytes() {
         let root = std::path::PathBuf::from(
-            std::env::var("COMTEC_TEST_ROOT").expect("set COMTEC_TEST_ROOT"),
+            std::env::var("DASHREEL_TEST_ROOT").expect("set DASHREEL_TEST_ROOT"),
         );
         for suffix in [
             "20260915_002/000_023859_A.mp4",

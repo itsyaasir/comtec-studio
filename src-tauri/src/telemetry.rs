@@ -193,7 +193,7 @@ mod tests {
     #[test]
     #[ignore = "requires the user's real fixtures"]
     fn real_telemetry() {
-        let root = std::env::var("COMTEC_TEST_ROOT").unwrap();
+        let root = std::env::var("DASHREEL_TEST_ROOT").unwrap();
         for file in [
             "20260915_002/000_023859_A.mp4",
             "20260915_004/000_025643_A.mp4",

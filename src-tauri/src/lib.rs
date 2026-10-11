@@ -187,7 +187,7 @@ fn cancel(state: State<'_, Arc<Media>>) {
 #[cfg(debug_assertions)]
 #[tauri::command]
 fn test_report(app: tauri::AppHandle, report: String) -> Result<(), String> {
-    if std::env::var_os("COMTEC_SMOKE_TEST").is_none() {
+    if std::env::var_os("DASHREEL_SMOKE_TEST").is_none() {
         return Err("Test mode is disabled".into());
     }
     std::fs::write(
@@ -217,7 +217,7 @@ pub fn run() {
     let builder = builder
         .on_page_load(|webview, payload| {
             if matches!(payload.event(), tauri::webview::PageLoadEvent::Finished)
-                && std::env::var_os("COMTEC_SMOKE_TEST").is_some()
+                && std::env::var_os("DASHREEL_SMOKE_TEST").is_some()
             {
                 let _ = webview
                     .window()
@@ -251,7 +251,7 @@ pub fn run() {
             );
             let config = app.path().app_config_dir()?.join("recording-folder");
             #[cfg(debug_assertions)]
-            let config = if std::env::var_os("COMTEC_SMOKE_TEST").is_some() {
+            let config = if std::env::var_os("DASHREEL_SMOKE_TEST").is_some() {
                 app.path().app_config_dir()?.join("smoke-recording-folder")
             } else {
                 config
@@ -260,8 +260,8 @@ pub fn run() {
                 .map(PathBuf::from)
                 .unwrap_or(app.path().document_dir()?.join("Dashcam"));
             #[cfg(debug_assertions)]
-            let root = if std::env::var_os("COMTEC_SMOKE_TEST").is_some() {
-                std::env::var("COMTEC_TEST_ROOT")
+            let root = if std::env::var_os("DASHREEL_SMOKE_TEST").is_some() {
+                std::env::var("DASHREEL_TEST_ROOT")
                     .map(PathBuf::from)
                     .unwrap_or(root)
             } else {
